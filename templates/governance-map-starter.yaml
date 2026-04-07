@@ -18,6 +18,12 @@ account:
   # conservative: always ask before acting
   # moderate: auto-handle high-confidence rules, ask for the rest
   # autonomous: auto-handle everything above the confidence threshold
+  status: pending_review  # pending_review | active
+  team:
+    has_team: false          # set during onboarding
+    review_period_days: 5    # how long the team gets to review before changes go live
+    review_deadline: null    # auto-set when migration plan is shared
+    migration_plan_shared: false
 
 # ─────────────────────────────────────────
 # THE BOX SYSTEM

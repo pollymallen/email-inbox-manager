@@ -59,6 +59,12 @@ account:
   onboarding_completed: true
   onboarding_date: 2026-04-06
   confidence_mode: conservative  # conservative | moderate | autonomous
+  status: active  # pending_review | active
+  team:
+    has_team: true
+    review_period_days: 5
+    review_deadline: 2026-04-11  # set during onboarding if team exists
+    migration_plan_shared: true
 
 # The Box System - how incoming email gets triaged
 triage_boxes:
@@ -247,9 +253,11 @@ Walk through labels in groups, starting with the dead/dormant ones:
 3. For active labels: "Are any of these doing the same job? Could we merge them?"
 4. Build the taxonomy and label_migrations sections of the governance map
 5. Present the proposed new structure for approval before making any changes
+6. If the user has a team, generate a **Migration Plan** document (see Team Rollout below)
 
 Important: Do NOT move or delete any labels without explicit user approval. Present the plan 
-first, get confirmation, then execute.
+first, get confirmation, then execute. If there's a team involved, do NOT execute until the 
+team review period has passed.
 
 **Phase 3 — Triage Calibration**
 
@@ -399,16 +407,60 @@ Users might say any of these to invoke specific modes:
 - "Give me my email report" → Mode 5 (Weekly Report)
 - "Where does [type of email] go?" → Mode 6 (Governance Map Review)
 - "Show me my email rules" → Mode 6 (Governance Map Review)
+- "Generate the migration plan" → Team Rollout (generates shareable migration-plan.md)
+- "My team signed off" → Unlocks execution of pending label changes
 
 ## Working with Teams
 
-If the user has an assistant or team (like a VA or head of operations), the 
-governance map serves as the shared reference document. When the user updates 
-a rule, the changelog captures it so the team can see what changed and why.
+The governance map is designed to be a shared reference — not just for the inbox owner, 
+but for anyone who touches their email (VAs, EAs, ops leads, team members).
 
-The governance map YAML file should be stored somewhere the team can access it 
-(a shared folder, a GitHub repo, etc.). The skill should remind the user of 
-this during onboarding.
+### The Migration Plan Document
+
+After the Consolidation Workshop (Phase 2), if the user has a team, generate a 
+**Migration Plan** — a human-readable summary document (markdown) that includes:
+
+1. **What's changing:** A table showing every label rename, merge, and archive with the reason
+   - Format: `Old Label → New Label | Reason | # of messages affected`
+2. **The new structure:** The complete label taxonomy with descriptions of what goes where
+3. **The "Where does X go now?" cheat sheet:** Quick-reference lookup for the most common 
+   email types the team handles — formatted as a simple table they can bookmark
+4. **Timeline:** When the changes will take effect (the user sets this)
+5. **How to give feedback:** Where and by when the team should raise concerns
+
+Ask the user: "Do you have team members who manage your email? If so, I'll generate a 
+migration plan you can share with them before we make any changes."
+
+### Team Review Workflow
+
+When a team is involved, follow this process:
+
+1. **Generate the migration plan** after Phase 2 consolidation
+2. **Ask the user how long the team needs to review** — suggest 3-5 business days as default
+3. **Save the migration plan** as `migration-plan.md` in the working directory
+4. **Do NOT execute label changes yet** — mark the governance map as `status: pending_review`
+5. **When the user says the team has signed off**, proceed with execution
+6. **After execution, keep the migration plan** as a permanent reference — the team can 
+   always open it to see the old→new mapping
+
+### Transition Period (Optional)
+
+If the user wants a gradual transition instead of a hard cutover:
+
+1. Keep old labels as aliases during the transition (apply both old and new labels)
+2. Set a sunset date for old labels
+3. During triage, if an email would have gone to an old label, apply the new label 
+   and log it — this builds team muscle memory
+4. After the sunset date, offer to remove the old labels entirely
+
+### Ongoing Team Communication
+
+- The **changelog** at the bottom of the governance map tracks every rule change with 
+  a timestamp and reason — team members can check this anytime
+- When rules change significantly, suggest the user notify the team: "This change 
+  affects how [type] emails get handled. Want me to draft a quick heads-up?"
+- The "Where does X go now?" query (Mode 6) is designed for team members — they can 
+  ask in plain language and get the current routing answer
 
 ## Dashboard (Optional)
 
