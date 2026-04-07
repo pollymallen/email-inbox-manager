@@ -345,13 +345,51 @@ For checking Box 1 (waiting for reply) items.
 
 ### Mode 4: Query / Search
 
-For "what was that email about X?" questions.
+For fuzzy, conversational questions about email — the user shouldn't need to remember 
+exact names, dates, or subjects. They'll ask things like:
 
-1. Load the governance map (useful for understanding label structure)
-2. Use Gmail MCP search to find relevant messages
-3. Present results with context from the governance map (which box it's in, 
-   any related rules)
-4. If running in claude.ai, can render results as a React dashboard artifact
+- "Who was that lead I talked to last week about Blueprint? I think his name was Adam?"
+- "Did Sarah ever reply about the invoice?"
+- "What was that email with the contract attachment?"
+- "When did I last hear from the Acme team?"
+- "Find that thread where we discussed pricing"
+
+**How to handle these queries:**
+
+1. **Parse the intent** — extract what you can: partial names, approximate dates, 
+   topics, keywords, sender/recipient hints. The user will be vague — that's fine.
+
+2. **Build a smart search** — translate the fuzzy query into Gmail MCP search:
+   - Partial names → search sender/recipient fields with what you have
+   - "Last week" → convert to date range (after:YYYY/MM/DD before:YYYY/MM/DD)
+   - Topics → search subject and body
+   - Combine multiple signals: `from:adam subject:blueprint newer_than:7d`
+   - If the first search is too broad, narrow it; if too narrow, broaden it
+
+3. **Cross-reference the governance map** — check sender_profiles for matches. 
+   If the user says "that lead named Adam," check if any sender profile matches. 
+   The governance map adds context Gmail search alone can't provide: which box an 
+   email is in, what triage rule applied, any notes about the sender.
+
+4. **Present results conversationally** — don't dump a list of raw email metadata. 
+   Answer the question naturally:
+   - "I found 3 emails with someone named Adam about Blueprint. The most recent is 
+     from Adam Torres (adam.torres@company.com) on April 2 — subject: 'Re: Blueprint 
+     program details.' He's in your Box 1 (waiting for reply) — looks like you sent 
+     him pricing info and haven't heard back. Want me to draft a follow-up?"
+   - Include: sender full name + email, date, subject, which box/label it's in, 
+     and any actionable next step
+
+5. **Handle dead ends gracefully** — if nothing matches:
+   - Try broadening the search (drop date constraints, try alternate spellings)
+   - Check if the conversation might be in a thread (search for the thread, not 
+     just individual messages)
+   - Ask a clarifying question: "I didn't find anyone named Adam in your Blueprint 
+     emails from last week. Could it be a different name, or maybe further back?"
+
+6. **Learn from queries** — if the user asks about the same person or topic 
+   repeatedly, suggest adding a sender profile or label so it's easier to find 
+   next time.
 
 ### Mode 5: Weekly Report
 
@@ -496,6 +534,9 @@ Users might say any of these to invoke specific modes:
 - "Triage my inbox" / "Sort my email" → Mode 2 (Triage)
 - "Check on my follow-ups" / "What's waiting?" → Mode 3 (Nudge Check)
 - "Find that email from [person]" → Mode 4 (Query)
+- "Who was that person who emailed about [topic]?" → Mode 4 (Query)
+- "Did [person] ever reply?" → Mode 4 (Query)
+- "What was that email about [topic]?" → Mode 4 (Query)
 - "Give me my email report" → Mode 5 (Weekly Report)
 - "Where does [type of email] go?" → Mode 6 (Governance Map Review)
 - "Show me my email rules" → Mode 6 (Governance Map Review)
