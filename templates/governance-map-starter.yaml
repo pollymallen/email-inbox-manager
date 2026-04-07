@@ -121,9 +121,42 @@ communication:
     format: "react"
 
 # ─────────────────────────────────────────
+# SCHEDULES
+# ─────────────────────────────────────────
+# Automated runs via RemoteTrigger (persistent)
+# or CronCreate (session-only). Set up during
+# onboarding Phase 5.
+
+schedules:
+  morning_triage:
+    enabled: false
+    cron: "3 9 * * 1-5"          # Weekdays ~9am
+    mode: triage
+    delivery: "draft_email"       # draft_email | slack | file
+    auto_handle: true             # apply auto rules without asking
+    notify_on_uncertain: true     # flag emails needing human review
+  nudge_check:
+    enabled: false
+    cron: "7 14 * * 1-5"          # Weekdays ~2pm
+    mode: nudge_check
+    delivery: "draft_email"
+  weekly_report:
+    enabled: false
+    cron: "57 8 * * 1"            # Monday ~9am
+    mode: weekly_report
+    delivery: "draft_email"
+    recipients: []                # email addresses to cc
+  newsletter_digest:
+    enabled: false
+    cron: "13 7 * * 1"            # Monday ~7am
+    mode: newsletter_digest
+    delivery: "draft_email"
+
+# ─────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────
 # Every rule change gets logged here so your team
-# can see what changed and why.
+# can see what changed and why. Automated runs also
+# log here with what was processed.
 
 changelog: []

@@ -385,6 +385,98 @@ One of the most valuable features: when a team member (or the user) asks
 5. If not found: "I don't have a rule for that yet. Based on similar patterns, 
    I'd suggest [box/label]. Want me to add a rule?"
 
+## Scheduling & Automation
+
+After onboarding, offer to set up automated schedules so the skill runs without the user 
+having to remember to invoke it. There are two scheduling tiers:
+
+### Tier 1: Session Schedules (CronCreate)
+
+These run while Claude is active in a session. Good for working sessions where the user 
+wants background triage happening while they focus on other things.
+
+When the user says "keep my inbox clean while I work" or "auto-triage in the background":
+
+1. Set up a recurring cron job (e.g., every 30 minutes) that runs Mode 2 (Triage) silently
+2. Only surface emails that need the user's input — everything with `auto` rules gets 
+   handled and logged without interrupting
+3. At the end of the session, summarize everything that was auto-handled
+
+Note: Session schedules expire when Claude exits. Remind the user of this.
+
+### Tier 2: Persistent Schedules (RemoteTrigger)
+
+These run on claude.ai even when the user isn't in a session — this is the real automation 
+layer. During onboarding Phase 5 (Communication Preferences), offer to set up:
+
+| Schedule | Default Cadence | What It Does |
+|----------|----------------|--------------|
+| **Morning Triage** | Weekdays 9am | Run Mode 2 on inbox. Auto-handle confident rules, batch uncertain ones into a summary draft email or Slack message for the user to review |
+| **Nudge Check** | Weekdays 2pm | Run Mode 3 on Box 1 items. Draft follow-ups for anything past its nudge deadline |
+| **Weekly Report** | Monday 9am | Run Mode 5. Compile the full weekly summary and deliver via the user's preferred channel |
+| **Newsletter Digest** | Monday 7am (if enabled) | Compile the week's newsletters into a digest |
+
+For each schedule, ask the user:
+- "Want me to set this up? What time works for you?"
+- "How should I deliver the results — draft email, Slack message, or just save to a file?"
+- "Should I cc or notify anyone on your team?"
+
+Store the schedule configuration in the governance map:
+
+```yaml
+schedules:
+  morning_triage:
+    enabled: true
+    cron: "3 9 * * 1-5"  # Weekdays ~9am
+    mode: triage
+    delivery: draft_email  # draft_email | slack | file
+    auto_handle: true  # apply auto rules without asking
+    notify_on_uncertain: true  # flag emails that need human review
+  nudge_check:
+    enabled: true
+    cron: "7 14 * * 1-5"  # Weekdays ~2pm
+    mode: nudge_check
+    delivery: draft_email
+  weekly_report:
+    enabled: true
+    cron: "57 8 * * 1"  # Monday ~9am
+    mode: weekly_report
+    delivery: draft_email
+    recipients: []  # email addresses to cc on the report
+  newsletter_digest:
+    enabled: false
+    cron: "13 7 * * 1"  # Monday ~7am
+    mode: newsletter_digest
+    delivery: draft_email
+```
+
+### Status Communication
+
+After each automated run, the skill should:
+
+1. **Log the run** in the governance map changelog: timestamp, what was processed, 
+   what was auto-handled, what needs review
+2. **Deliver a status summary** via the user's preferred channel:
+   - **Draft email** (default): Create a Gmail draft with the run summary — the user 
+     sees it in their drafts and can review/discard
+   - **Slack message**: Post to a designated channel or DM
+   - **File**: Append to a `status-log.md` in the working directory
+3. **Flag anomalies**: If something unusual happens (spike in unrecognized senders, 
+   rule hitting way more than expected, emails that don't match any rule), highlight 
+   it prominently in the status
+4. **Confidence tracking**: Include a running stat in weekly reports — "This week, X% 
+   of emails were auto-handled vs Y% last week" — so the user can see the system 
+   getting smarter over time
+
+### The "What Did You Do?" Question
+
+When the user asks "what have you been doing with my email?" or "show me your activity":
+
+1. Pull the changelog entries since the last check-in
+2. Summarize: N emails triaged, N auto-filed, N flagged for review, N nudges drafted
+3. Show any rules that were proposed but not yet approved
+4. Show confidence trend (% auto-handled over time)
+
 ## Error Handling and Safety
 
 - **Never delete emails** — only archive, label, or move
@@ -409,6 +501,9 @@ Users might say any of these to invoke specific modes:
 - "Show me my email rules" → Mode 6 (Governance Map Review)
 - "Generate the migration plan" → Team Rollout (generates shareable migration-plan.md)
 - "My team signed off" → Unlocks execution of pending label changes
+- "Set up my email schedules" → Configure automated triage, nudge, and report schedules
+- "Keep my inbox clean while I work" → Session-only background triage (CronCreate)
+- "What have you been doing with my email?" → Activity summary from changelog
 
 ## Working with Teams
 
