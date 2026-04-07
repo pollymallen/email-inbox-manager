@@ -1,0 +1,123 @@
+# Email Governance Map — Starter Template
+# ==========================================
+# This file is generated and maintained by the email-inbox-manager skill.
+# It captures YOUR personal email organization rules so that Claude (or any 
+# team member) knows exactly how to handle your email.
+#
+# You can edit this file directly — it's designed to be human-readable.
+# The skill will pick up your changes on the next run.
+#
+# Last updated: PENDING_ONBOARDING
+# Account: PENDING_ONBOARDING
+
+account:
+  email: ""
+  onboarding_completed: false
+  onboarding_date: null
+  confidence_mode: conservative  # conservative | moderate | autonomous
+  # conservative: always ask before acting
+  # moderate: auto-handle high-confidence rules, ask for the rest
+  # autonomous: auto-handle everything above the confidence threshold
+
+# ─────────────────────────────────────────
+# THE BOX SYSTEM
+# ─────────────────────────────────────────
+# Incoming email gets triaged into one of these boxes,
+# or auto-filed if it's a completed/informational item.
+
+triage_boxes:
+  box_1_waiting:
+    description: "Waiting for a reply from someone else"
+    label: "Box 1 - Waiting"
+    check_cadence: "daily"
+    nudge_rules:
+      default:
+        nudge_after_days: [3, 7, 14]
+        max_nudges: 3
+        nudge_style: "polite"
+
+  box_2_action:
+    description: "I need to do something about this"
+    label: "Box 2 - Action Needed"
+
+  box_3_review:
+    description: "I need to read/review this, but no action required"
+    label: "Box 3 - Review"
+
+  auto_filed:
+    description: "Informational updates — acknowledged, closed out, filed"
+    report_cadence: "weekly"
+
+# ─────────────────────────────────────────
+# LABEL TAXONOMY
+# ─────────────────────────────────────────
+# Your consolidated folder/label structure.
+# Populated during onboarding.
+
+taxonomy:
+  active_labels: []
+  label_migrations: []
+  archived_labels: []
+
+# ─────────────────────────────────────────
+# SENDER PROFILES
+# ─────────────────────────────────────────
+# Learned patterns about specific senders.
+# Built up over time through triage sessions.
+
+sender_profiles: []
+
+# ─────────────────────────────────────────
+# NEWSLETTERS
+# ─────────────────────────────────────────
+
+newsletters:
+  subscribed: []
+  unsubscribed: []
+  digest_settings:
+    enabled: false
+    delivery: "weekly"
+    day: "Monday"
+    format: "summary"
+
+# ─────────────────────────────────────────
+# TRIAGE RULES
+# ─────────────────────────────────────────
+# Evaluated in order — first match wins.
+# Each rule has an approval_mode:
+#   always_ask — confirm every time (default for new rules)
+#   confirm    — apply but report it
+#   auto       — apply silently, include in weekly report
+
+triage_rules: []
+
+# ─────────────────────────────────────────
+# COMMUNICATION PREFERENCES
+# ─────────────────────────────────────────
+
+communication:
+  uncertainty_threshold: 0.7
+  ask_method: "batch"
+  batch_cadence: "end_of_session"
+
+  weekly_report:
+    enabled: true
+    day: "Monday"
+    include:
+      - auto_filed_summary
+      - box_1_status
+      - nudges_sent
+      - newsletters_digested
+      - rules_suggested
+
+  dashboard:
+    enabled: false
+    format: "react"
+
+# ─────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────
+# Every rule change gets logged here so your team
+# can see what changed and why.
+
+changelog: []

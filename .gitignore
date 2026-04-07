@@ -1,0 +1,30 @@
+# Email Governance Maps (contain personal email data)
+# The starter TEMPLATE is safe to commit — populated maps are NOT
+email-governance-map.yaml
+email-governance-map.backup.yaml
+*.governance-map.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node (in case anyone extends with MCP server tooling)
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+
+# Skill packaging artifacts
+*.skill
