@@ -302,10 +302,25 @@ Say something close to this (adapt tone to the user):
 > - **Everything I create is plain text on your laptop.** The governance map, snapshots, and 
 >   logs are YAML and Markdown files in this folder. Open them in any editor. Edit them by 
 >   hand if you want. Port them to another tool later. **No lock-in.**
-> - **I can't delete your email.** Hard limit, not a preference. The worst I can do is apply 
->   a `To Trash` label — you empty it yourself, in Gmail, whenever you want.
-> - **Nothing commits without your approval.** I show you the plan, you say go. Bulk actions 
->   move in batches with previews. You can stop at any point.
+> - **I literally cannot delete your email.** This isn't a rule I'm choosing to follow — the 
+>   Gmail connector I use doesn't expose a delete tool at all. The available actions are: 
+>   read, label, unlabel (archive), and draft. No delete, no permanent trash. The worst I can 
+>   do is apply a `To Trash` label — and you empty that yourself, in Gmail, whenever you want. 
+>   This is a structural guarantee, not a preference.
+> - **Progressive trust — you're always in control of the pace.** By default, I ask before 
+>   every action. As you see how I handle things, you can tell me to skip the approval step 
+>   for specific patterns. You have three levels of trust per rule:
+>   - **Always ask** — default for every new rule. I check with you every time.
+>   - **For this session only** — "go ahead and auto-handle emails like this for now, but 
+>     ask again next time." Nothing persists across sessions.
+>   - **Persistent auto** — "from now on, just handle this without asking." Saved to the 
+>     governance map. You can revoke it anytime by editing the YAML or saying so.
+>
+>   I'll also prompt you ("I've asked about this 3 times and you always say X — want me to 
+>   handle it automatically going forward?") but the choice is always yours, and you can 
+>   downgrade any rule back to "always ask" whenever you want.
+> - **Nothing bulk commits without your approval.** I show you the plan, you say go. Bulk 
+>   actions move in batches with previews. You can stop at any point.
 > - **About Anthropic's side of the LLM call:** Each time I process an email, that content is 
 >   sent to Anthropic's API for that request. Anthropic's current policy is that API inputs 
 >   are not used to train models by default, and API content is retained only briefly for 
@@ -516,8 +531,23 @@ This is where the conservative → autonomous graduation happens. Each rule gets
 - `confirm` — Apply the rule but report it, user can override (moderate)
 - `auto` — Apply silently, include in weekly report (autonomous, earned over time)
 
-New rules default to `always_ask`. When the user says "yes, always do that" during 
-triage, upgrade the rule to `auto`.
+Plus a **session-only override** that doesn't change `approval_mode` in the stored rule: 
+when the user says "go ahead and auto-handle these for now" or "yes to all like this for 
+this session," set an in-memory `session_auto: true` flag on the rule for the current 
+session only. Next session, the rule reverts to its persisted `approval_mode`. Track 
+session overrides in a temporary list and report them at session end: "This session I 
+auto-handled [N] emails via session-only trust on rule [X]. Want to make that permanent?"
+
+**Progressive-trust language to listen for:**
+- "Yes, do that" / "Approve" — single-action approval, rule stays at `always_ask`
+- "Yes to all like this for this session" / "Auto-handle these for now" — set 
+  `session_auto: true` on the rule
+- "Yes, always do that" / "From now on, handle this automatically" — persist: upgrade 
+  rule to `auto` in the governance map
+- "Stop auto-handling [X]" / "Ask me again about [X]" — downgrade rule to `always_ask`
+
+New rules default to `always_ask`. The graduation path is user-driven — never upgrade a 
+rule without an explicit request or an explicit yes to the graduation prompt below.
 
 **Phase 4 — Newsletter Audit**
 
@@ -570,8 +600,15 @@ For ongoing inbox processing after onboarding is complete.
 **The confidence graduation prompt:**
 When a user confirms an `always_ask` action for the 3rd time with the same pattern, 
 suggest: "I've asked you about emails like this 3 times now and you've always said 
-[action]. Want me to just handle these automatically going forward?" If yes, upgrade 
-to `auto`.
+[action]. Want me to handle these automatically — **just for this session**, or 
+**from now on**?" 
+
+- "Just this session" → set `session_auto: true` (in-memory only, resets next session)
+- "From now on" → upgrade rule to `auto` and persist to governance map
+- "Keep asking" → leave at `always_ask`
+
+Never assume the answer. The three-option phrasing is important — don't collapse it to 
+a yes/no.
 
 ### Mode 3: Nudge Check
 
