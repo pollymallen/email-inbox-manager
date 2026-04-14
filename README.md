@@ -83,17 +83,19 @@ The skill can't delete emails (see Safety above), but onboarding can move a lot 
 
 ## Connecting Gmail: Two Options
 
-The skill talks to Gmail via an MCP connector. You have two ways to wire that up. Pick one.
+The skill talks to Gmail through one of two transports. Pick one.
 
 ### Why two options?
 
-The claude.ai Gmail connector is the fastest path — one-click auth, nothing to install — but it only holds one Gmail account at a time. If you want to manage a second inbox, you either swap the connector (disrupting whatever else you were using it for) or you run a separate local MCP server that can hold multiple accounts side-by-side. That second path is what `gws` is for.
+The claude.ai Gmail connector is the fastest path — one-click auth, nothing to install — but it only holds one Gmail account at a time. If you want to manage a second inbox, you either swap the connector (disrupting whatever else you were using it for) or you run the `gws` CLI locally, which can hold multiple accounts side-by-side and is called via Claude Code's Bash tool.
 
-| | Option A: claude.ai Gmail connector | Option B: `gws` CLI |
+| | Option A: claude.ai Gmail connector | Option B: `gws` CLI via Bash |
 |---|---|---|
-| **Setup** | Click to connect | ~30 min (brew + GCP OAuth + `gws auth login`) |
-| **Accounts** | One at a time | Multiple, switchable |
-| **Runs in** | claude.ai, Cowork, Claude Code | Claude Code (local MCP) |
+| **Setup** | Click to connect | ~20 min (brew + GCP OAuth + `gws auth login`) |
+| **Transport** | MCP tool calls | Bash tool running `gws` commands |
+| **Accounts** | One at a time | Multiple, switchable per folder |
+| **Runs in** | claude.ai, Cowork, Claude Code | Claude Code |
+| **Delete protection** | Structural (no delete tool exists) | Skill policy (never calls delete APIs) |
 | **Good for** | Single inbox, quick start | Managing personal + work, or household + business |
 
 ### Option A — claude.ai Gmail MCP connector (simpler)
@@ -107,9 +109,9 @@ This is the default path and what the skill was originally built against. One Gm
 
 To manage a different account, you swap the connector in claude.ai Settings and restart the session. That's fine if you rarely switch. If you switch often, use Option B instead.
 
-### Option B — `gws` CLI as a local MCP server (multi-account)
+### Option B — `gws` CLI via Bash (multi-account)
 
-[`gws`](https://github.com/googleworkspace/cli) is the official Google Workspace CLI (released March 2026). It runs locally, holds OAuth credentials for multiple Google accounts, and exposes an MCP server so Claude Code can talk to whichever account you've `cd`'d into.
+[`gws`](https://github.com/googleworkspace/cli) is the official Google Workspace CLI (released March 2026). It runs locally and holds OAuth credentials for multiple Google accounts. `gws` does **not** ship an MCP server — instead, the skill calls `gws` commands through Claude Code's Bash tool, the same way it would call `git` or any other local CLI.
 
 This path takes more upfront setup but means you can have `pollymallen@gmail.com` and `polly.allen@aicareerboost.com` both available without ever swapping a connector.
 
@@ -121,7 +123,7 @@ brew install googleworkspace-cli
 
 **2. Create a GCP OAuth Desktop client**
 
-Each person running `gws` needs their own OAuth client. It's a one-time setup per machine, not per account.
+Each person running `gws` needs their own OAuth client. It's a one-time setup per machine, not per account. If you have `gcloud` installed, `gws auth setup` can do most of this for you (`gws auth setup --login`). Otherwise, do it manually:
 
 - Go to https://console.cloud.google.com and create a new project (or reuse one)
 - Open **OAuth consent screen** → User Type: **External** → Publishing status: **Testing**
@@ -132,14 +134,22 @@ Each person running `gws` needs their own OAuth client. It's a one-time setup pe
 **3. Authenticate each account**
 
 ```bash
-gws auth login
+gws auth login --services gmail
 ```
 
-Run this once per Gmail account you want to manage. `gws` will open a browser window for each one. See `gws auth --help` for switching between authenticated accounts.
+Run this once per Gmail account you want to manage. `gws` will open a browser window for each one. Use `--services gmail` to limit scopes to just what this skill needs; skip `--full` (which requests pubsub + cloud-platform). See `gws auth --help` for managing credentials across accounts.
 
-**4. Register `gws mcp` as an MCP server in Claude Code**
+**4. No MCP registration needed**
 
-`gws` ships an MCP server as a subcommand. The exact registration flags depend on your Claude Code version — check `gws mcp --help` and the [gws repo](https://github.com/googleworkspace/cli) for current instructions. Once registered, restart Claude Code and verify the `gws` tools show up.
+The skill invokes `gws` through Claude Code's Bash tool — no MCP server to register, no Claude Code restart, no extra config. As soon as `gws auth status` shows you're authenticated, you're ready.
+
+Verify:
+```bash
+gws auth status
+gws gmail users getProfile --params '{"userId":"me"}'
+```
+
+The second command should print your email address and a message count.
 
 **5. Folder convention: one working directory per account**
 
@@ -153,7 +163,9 @@ The skill persists its governance map (and all learned rules) to the current wor
     email-governance-map.yaml
 ```
 
-`cd` into the folder for whichever account you want to work on, then start Claude Code. The skill's Phase 0 pre-check confirms the connected account matches the folder before touching anything.
+`cd` into the folder for whichever account you want to work on, then start Claude Code. The skill's Phase 0a pre-check calls `gws gmail users getProfile` to confirm the authenticated account matches the folder before touching anything.
+
+To switch the active `gws` account before starting a session, use `gws auth` commands (see `gws auth --help`). Each authenticated account has its own stored credentials; the skill reads whichever is current.
 
 ## The Governance Map
 

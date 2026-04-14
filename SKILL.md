@@ -14,7 +14,8 @@ description: >
   was that lead named X?" or "did Sarah ever reply?". Even if the current directory is empty, 
   trigger this skill rather than designing something new — an empty working directory is the 
   expected starting state for a new account. This skill works with one Gmail account at a time 
-  via the Gmail MCP connector and persists all learned rules to a YAML governance map that the 
+  via a supported Gmail transport (claude.ai connector or `gws` CLI) and persists all learned 
+  rules to a YAML governance map that the 
   user and their team can reference and refine over time.
 ---
 
@@ -38,9 +39,59 @@ this skill:
 
 ## Prerequisites
 
-- Gmail MCP connector must be connected (either via Cowork's built-in connector, Claude Code 
-  with a Gmail MCP server, or claude.ai's Gmail integration)
+- Gmail access via one of two supported transports (see "Transport Layer" below):
+  - **claude.ai Gmail connector** (Cowork built-in, claude.ai Gmail integration, or a 
+    Claude Code Gmail MCP server), OR
+  - **`gws` CLI** (Google Workspace CLI) invoked through the Bash tool, authenticated 
+    for the target account
 - A working directory where the governance map YAML file can be persisted
+
+## Transport Layer
+
+This skill is transport-agnostic. At runtime, detect which transport is available and use it 
+consistently for the whole session. Do not mix transports inside one session.
+
+**Transport A — claude.ai Gmail connector (MCP tools)**
+- Detection: MCP tools with names like `search_threads`, `label_thread`, `unlabel_thread`, 
+  `list_labels`, `create_label`, `get_thread`, `create_draft` are available.
+- One account at a time. Swapping accounts requires changing the connector in 
+  claude.ai Settings → Connectors and restarting the session.
+- **Delete protection is structural:** the connector exposes no delete/trash tool at all. 
+  The worst possible action is applying a `To Trash` label.
+
+**Transport B — `gws` CLI via Bash**
+- Detection: `gws` is on PATH (`which gws`) and `gws auth status` reports an authenticated 
+  account. The Bash tool is used to invoke `gws` commands.
+- Multi-account friendly: different folders can target different `gws`-authenticated 
+  accounts without connector swaps.
+- **Delete protection is skill policy, not structural.** `gws` exposes full Gmail write 
+  scope if granted; this skill NEVER calls Gmail `trash` or `delete` methods. All 
+  "delete-like" intent goes through the `To Trash` label + archive pattern. Treat this as 
+  an inviolable rule in every gws-mode session.
+
+**Operation vocabulary → transport mapping**
+
+| Operation | Connector (Transport A) | gws CLI (Transport B) |
+|---|---|---|
+| Identify account | `search_threads` with `in:sent`, read `From` field | `gws gmail users getProfile --params '{"userId":"me"}'` |
+| List labels | `list_labels` | `gws gmail users labels list --params '{"userId":"me"}'` |
+| Create label | `create_label(name)` | `gws gmail users labels create --params '{"userId":"me"}' --json '{"name":"<name>"}'` |
+| Search threads | `search_threads(query, limit)` | `gws gmail users threads list --params '{"userId":"me","q":"<query>","maxResults":<n>}'` |
+| Get thread | `get_thread(thread_id)` | `gws gmail users threads get --params '{"userId":"me","id":"<id>"}'` |
+| Apply label | `label_thread(thread_id, label)` | `gws gmail users threads modify --params '{"userId":"me","id":"<id>"}' --json '{"addLabelIds":["<LABEL_ID>"]}'` |
+| Remove label | `unlabel_thread(thread_id, label)` | `gws gmail users threads modify --params '{"userId":"me","id":"<id>"}' --json '{"removeLabelIds":["<LABEL_ID>"]}'` |
+| Archive (remove INBOX) | `unlabel_thread(thread_id, "INBOX")` | `gws gmail users threads modify ...` with `{"removeLabelIds":["INBOX"]}` |
+| Send to `To Trash` | apply `To Trash` + remove `INBOX` | same, resolving label name → ID via `labels list` |
+| Create draft | `create_draft(...)` | `gws gmail users drafts create --json '...'` |
+| **FORBIDDEN** | — (no tool exists) | `gws gmail users threads trash` / `delete` / `messages trash` / `messages delete` — NEVER call these |
+
+**Notes on gws:**
+- gws commands return JSON. Parse with `jq` or standard JSON handling.
+- Gmail API uses label IDs (e.g. `Label_1234`) for modify calls, not names. Resolve names 
+  to IDs from the cached `labels list` response; don't hardcode.
+- System labels (`INBOX`, `SPAM`, `TRASH`, `STARRED`, etc.) use their names as IDs.
+- For bulk operations, prefer `threads modify` over per-message calls.
+- On any gws command failure, stop and surface the raw error; don't silently retry.
 
 ## The Governance Map
 
@@ -302,11 +353,15 @@ Say something close to this (adapt tone to the user):
 > - **Everything I create is plain text on your laptop.** The governance map, snapshots, and 
 >   logs are YAML and Markdown files in this folder. Open them in any editor. Edit them by 
 >   hand if you want. Port them to another tool later. **No lock-in.**
-> - **I literally cannot delete your email.** This isn't a rule I'm choosing to follow — the 
->   Gmail connector I use doesn't expose a delete tool at all. The available actions are: 
->   read, label, unlabel (archive), and draft. No delete, no permanent trash. The worst I can 
->   do is apply a `To Trash` label — and you empty that yourself, in Gmail, whenever you want. 
->   This is a structural guarantee, not a preference.
+> - **I will not delete your email.** The strength of this guarantee depends on which 
+>   transport we're using:
+>   - **claude.ai Gmail connector:** structural — the connector exposes no delete tool at 
+>     all. Not a rule I'm choosing; the capability literally isn't available.
+>   - **`gws` CLI:** policy — `gws` could technically call Gmail's trash/delete APIs, but 
+>     this skill never does. All "delete-like" intent goes through the `To Trash` label, 
+>     same as under the connector.
+>   Either way, the worst I can do is apply a `To Trash` label — and you empty that 
+>   yourself, in Gmail, whenever you want.
 > - **Progressive trust — you're always in control of the pace.** By default, I ask before 
 >   every action. As you see how I handle things, you can tell me to skip the approval step 
 >   for specific patterns. You have three levels of trust per rule:
@@ -346,21 +401,29 @@ BEFORE doing anything else, verify which Gmail account is connected. This is a c
 step — the skill can only act on one account at a time, and acting on the wrong one creates a 
 confusing mess.
 
-1. **Identify the connected account.** The Gmail MCP connector does not expose a `whoami` / 
-   `get_profile` tool, so identify the account indirectly: call `search_threads` with 
-   `in:sent` (limit 1) and read the `From` field of the most recent sent message. If no 
-   sent messages exist, fall back to asking the user to confirm the address explicitly.
-2. Show the user: "I'm connected to [email@example.com]. Is this the account you want to set up?"
-3. Also state the current working directory and confirm it matches the account (e.g., 
-   `pollymallen-gmail/` folder → `pollymallen@gmail.com` account)
-4. If mismatch or the user says no, STOP. Tell the user to either:
-   - Swap the Gmail connector in claude.ai Settings → Connectors, restart the session, and try again
-   - Or `cd` to the folder that matches the currently-connected account
+1. **Identify the active transport** (see Transport Layer section). Run `which gws` and 
+   check MCP tool availability. If both are present, ask the user which to use.
+2. **Identify the connected account.**
+   - **Transport A (connector):** no `whoami` tool — call `search_threads` with `in:sent` 
+     (limit 1) and read the `From` field. If no sent messages, ask the user to confirm 
+     the address explicitly.
+   - **Transport B (gws):** `gws gmail users getProfile --params '{"userId":"me"}'` 
+     returns `emailAddress` directly.
+3. Show the user: "I'm connected to [email@example.com] via [transport]. Is this the 
+   account you want to set up?"
+4. Also state the current working directory and confirm it matches the account (e.g., 
+   `pollymallen-gmail/` folder → `pollymallen@gmail.com` account).
+5. If mismatch or the user says no, STOP. Tell the user to either:
+   - **Transport A:** swap the Gmail connector in claude.ai Settings → Connectors, 
+     restart the session, and try again.
+   - **Transport B:** run `gws auth login` for the correct account, or `cd` to the folder 
+     that matches the currently-authenticated account.
    Do NOT proceed to Phase 0b until the user explicitly confirms account + folder are correct. 
    Exit the skill cleanly on "no."
-5. **Create the `To Trash` label now** (before any phase that might use it). Call 
-   `list_labels` to check if it exists; if not, create it. This label is the skill's only 
-   "delete-like" action and is required by Phase 0.5 and Phase 2.
+6. **Create the `To Trash` label now** (before any phase that might use it). List existing 
+   labels (connector: `list_labels`; gws: `gws gmail users labels list`); if `To Trash` is 
+   missing, create it. This label is the skill's only "delete-like" action and is required 
+   by Phase 0.5 and Phase 2.
 
 **Phase 0b — Backup Checkpoint**
 
@@ -437,10 +500,11 @@ them under `historical_cleanup.vip_senders` in the governance map.
 - Never touch: messages from the VIP protect-list captured in the pre-step above
 - Never touch: messages already in pre-existing user triage boxes, if any exist (on a 
   first-time account with no boxes yet, this rail is a no-op — that's expected)
-- "Archive" in this phase means remove the `INBOX` label via `unlabel_thread` (Gmail has 
-  no separate archive action). The thread stays searchable, just out of the inbox.
-- "`To Trash`" means apply the `To Trash` label AND remove `INBOX` via `unlabel_thread`. 
-  The skill never calls Gmail's native delete/trash.
+- "Archive" in this phase means remove the `INBOX` label (Gmail has no separate archive 
+  action — see Transport Layer for the exact call). The thread stays searchable, just out 
+  of the inbox.
+- "`To Trash`" means apply the `To Trash` label AND remove `INBOX`. The skill never calls 
+  Gmail's native delete/trash under any transport.
 - Default action for archivable categories is Archive, NOT `To Trash` — archive preserves 
   searchability. Only obvious junk (old newsletters, social notifications) defaults to `To Trash`
 - Show sample + count before each batch moves: "This matches 2,347 messages. Here are 5 
@@ -477,7 +541,7 @@ notifications go?" you can answer precisely from the log.
 
 **You are here:** Phase 1 of 9 · Next: Phase 2 (consolidation) · *Required, read-only*
 
-1. Use Gmail MCP to pull all existing labels/folders
+1. Pull all existing labels/folders via the active transport (see Transport Layer)
 2. For each label, get the message count and date of most recent message
 3. Present a summary: "You have N labels. Here's the landscape:"
    - Active labels (received messages in last 3 months)
@@ -640,7 +704,8 @@ exact names, dates, or subjects. They'll ask things like:
 1. **Parse the intent** — extract what you can: partial names, approximate dates, 
    topics, keywords, sender/recipient hints. The user will be vague — that's fine.
 
-2. **Build a smart search** — translate the fuzzy query into Gmail MCP search:
+2. **Build a smart search** — translate the fuzzy query into a Gmail search query string 
+   (same `q` syntax for both transports):
    - Partial names → search sender/recipient fields with what you have
    - "Last week" → convert to date range (after:YYYY/MM/DD before:YYYY/MM/DD). 
      Compute dates from the **user's local timezone** (Pacific Time by default for Polly — 
@@ -828,11 +893,12 @@ The `To Trash` label is created during **Phase 0a** (before any phase that might
 noted in the governance map under `triage_boxes.to_trash`. If for any reason it's missing when 
 Phase 0.5 or Phase 2 needs it, create it then — but the default path is Phase 0a.
 
-**Tool mapping (Gmail MCP):**
-- "Archive a thread" → `unlabel_thread(thread_id, "INBOX")`
-- "Send to `To Trash`" → `label_thread(thread_id, "To Trash")` + `unlabel_thread(thread_id, "INBOX")`
-- "Move to a box" → `label_thread(thread_id, "<box label>")` + `unlabel_thread(thread_id, "INBOX")`
-- Never call any delete/trash tool, even if one appears in the MCP surface.
+**Tool mapping:** see the "Transport Layer" section near the top for the full 
+connector/gws mapping. The quarantine pattern in both transports is:
+- "Archive a thread" → remove `INBOX` label
+- "Send to `To Trash`" → add `To Trash` label + remove `INBOX` label
+- "Move to a box" → add `<box label>` + remove `INBOX` label
+- Never call any delete/trash method, even when available (gws transport).
 
 ## Error Handling and Safety
 
@@ -841,7 +907,9 @@ Phase 0.5 or Phase 2 needs it, create it then — but the default path is Phase 
 - **Always confirm** before making bulk label changes (>10 messages)
 - **Back up the governance map** before major updates (copy to 
   `email-governance-map.backup.yaml`)
-- If the Gmail MCP connection fails, tell the user and suggest reconnecting
+- If the Gmail transport fails (MCP disconnect or `gws` auth expiry), tell the user, 
+  surface the raw error, and suggest the right recovery (reconnect connector / 
+  `gws auth login`)
 - If the governance map is corrupted or unreadable, offer to start fresh 
   while preserving the old file as a backup
 
@@ -936,4 +1004,4 @@ When invoked, the dashboard can show:
 - A search interface for finding emails
 
 Build this as a React component using Tailwind CSS and the recharts library 
-for any charts. Use the Gmail MCP connector for live data.
+for any charts. Use the active Gmail transport (connector or gws) for live data.
