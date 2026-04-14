@@ -29,6 +29,7 @@ The skill starts by asking you about every email. As you confirm its suggestions
 
 ## What It Does
 
+- **🕰️ Historical Cleanup** — For large inboxes: bulk-archives old newsletters, social notifications, expired calendar invites, and long-dormant threads so you're not dragged through a decade of noise
 - **🧹 Inbox Cleanup** — Walks you through consolidating labels/folders, archiving dead ones, and building a clean taxonomy
 - **📋 Triage Sessions** — Processes your inbox using your rules, learning new patterns as it goes
 - **⏰ Follow-Up Tracking** — Monitors Box 1 items and drafts nudge emails when things go stale  

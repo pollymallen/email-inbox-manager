@@ -264,6 +264,69 @@ Offer three options:
 
 Record the choice in the changelog before proceeding to Phase 1.
 
+**Phase 0.5 — Historical Cleanup (Optional)**
+
+For large or long-lived inboxes, offer a bulk cleanup pass on old low-value email BEFORE 
+Phase 1 discovery. This makes the rest of onboarding dramatically more useful — Phase 1's 
+label analysis isn't drowning in decade-old newsletters.
+
+**When to offer this phase:**
+- Inbox has >5,000 total messages, OR
+- Oldest email is >2 years old, OR
+- User explicitly mentions old email as a pain point
+
+**When to skip automatically:**
+- Inbox is <500 messages, OR
+- All messages are <1 year old
+
+**Pitch to user:**
+"Your oldest email is from [date] and you have [N] messages. Want to do a bulk cleanup 
+on old low-value email first, so Phase 1 focuses on what matters now? I'll show you 
+candidates in batches and you approve each batch before anything moves."
+
+**The categories (user toggles each on/off, adjusts age threshold per category):**
+
+| Category | Criteria | Default age | Default action |
+|----------|----------|-------------|----------------|
+| Old newsletters | Sender has `unsubscribe` footer, bulk-mailer patterns | >2 years | `To Trash` |
+| Old social notifications | LinkedIn, Facebook, Twitter, Instagram notification senders | >1 year | `To Trash` |
+| Old transactional | Shipping, receipts, order confirmations | >2 years | Archive (keep for tax/reference) |
+| Old calendar invites | Past-event calendar notifications | >6 months | Archive |
+| Old auto-notifications | GitHub, Jira, CI/CD, monitoring alerts | >1 year | Archive |
+| Long-dormant threads | No activity, not starred, not VIP | >3 years | Archive |
+
+**Safety rails — DO NOT bypass even if asked:**
+- Never touch: starred, important, sent-by-user, drafts
+- Never touch: messages from senders the user has flagged as VIP during onboarding
+- Never touch: messages in the user's currently-active triage boxes (Box 1/2/3 if they exist)
+- Default action for archivable categories is Archive, NOT `To Trash` — archive preserves 
+  searchability. Only obvious junk (old newsletters, social notifications) defaults to `To Trash`
+- Show sample + count before each batch moves: "This matches 2,347 messages. Here are 5 
+  random samples: [list]. Proceed / adjust criteria / skip this category?"
+- User approves each category independently — no bulk "yes to everything" shortcut
+
+**Execution flow:**
+1. Estimate inbox size and age, present the pitch
+2. User picks categories to include and age thresholds
+3. For each selected category:
+   a. Build the Gmail search query (`older_than:2y category:promotions has:unsubscribe`, etc.)
+   b. Count matches, pull 5 random samples, show to user
+   c. User approves / adjusts / skips
+   d. On approval: apply the action in batches of ~500, with progress updates
+   e. Log the action to changelog with the exact search query and count
+4. At the end, summarize: "Moved [N] to Archive, [M] to To Trash. Your inbox is now 
+   [X]% smaller. Let's move on to Discovery."
+
+**Record in governance map under `historical_cleanup`:**
+- Date performed
+- Categories included with age thresholds used
+- Gmail search queries executed
+- Counts moved per category
+- Any categories skipped
+
+This history matters because if the user later says "where did all my old shipping 
+notifications go?" you can answer precisely from the log.
+
 **Phase 1 — Discovery**
 
 1. Use Gmail MCP to pull all existing labels/folders

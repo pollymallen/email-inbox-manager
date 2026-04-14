@@ -158,6 +158,23 @@ schedules:
     delivery: "draft_email"
 
 # ─────────────────────────────────────────
+# HISTORICAL CLEANUP
+# ─────────────────────────────────────────
+# Record of the Phase 0.5 bulk cleanup pass performed during onboarding
+# (or later, if re-run). Useful for answering "where did my old X emails go?"
+
+historical_cleanup:
+  performed: false
+  date: null
+  categories: []   # e.g.:
+                   # - name: old_newsletters
+                   #   age_threshold: "2y"
+                   #   action: to_trash
+                   #   query: "older_than:2y category:promotions has:unsubscribe"
+                   #   count: 2347
+  skipped_categories: []
+
+# ─────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────
 # Every rule change gets logged here so your team
