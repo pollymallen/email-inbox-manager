@@ -36,6 +36,10 @@ Adaptive email management skill that learns the user's personal organization sys
 - Consider adding a sample populated governance map for reference
 - Share at Next Level and collect feedback
 
+## Backlog (Spin-off Ideas)
+
+- **`skill-evaluator` skill** — open-source skill that audits third-party Claude skills / MCP servers / AI tools by GitHub URL. Rubric-based 1–5 scoring across 5 dimensions: Active Development, Adoption & Community, Security Posture, Code Quality, Trust & Transparency. Output: markdown audit report with per-dimension reasoning and overall verdict (Use / Use with caution / Skip). Pull in the `skill-creator` skill to bootstrap it. Origin: came out of evaluating `evolsb/claude-code-google-workspace` during email-inbox-manager setup (2026-04-13).
+
 ## Key Files
 - `SKILL.md` — skill definition (~613 lines)
 - `templates/governance-map-starter.yaml` — starter template (with schedules + team fields)
