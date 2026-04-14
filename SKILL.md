@@ -238,6 +238,32 @@ mode from context, or ask if ambiguous.
 This is the interactive walk-through that builds the governance map from scratch. Run this when 
 no governance map exists yet.
 
+**Phase 0 — Backup Checkpoint**
+
+Before touching anything, offer the user a backup. Frame it honestly — this skill can't delete 
+emails (see Permission Model), but Phase 2 consolidation can move a lot of messages between 
+labels, and some users want a rollback point.
+
+Offer three options:
+
+1. **Snapshot label structure (recommended default, fast)**
+   - Pull all labels, message counts, and message IDs per label
+   - Save as `pre-onboarding-snapshot.yaml` in the working directory
+   - This is enough to reconstruct label assignments if needed
+   - Takes ~1 minute depending on inbox size
+
+2. **Full Gmail export via Google Takeout**
+   - Direct the user to https://takeout.google.com
+   - Have them deselect everything, then select only "Mail"
+   - They start the export; Google emails them when it's ready (hours for large inboxes)
+   - Tell the user they do NOT need to wait — we'll proceed while it runs in the background
+
+3. **Skip**
+   - Fine for small inboxes, confident users, or when the snapshot is sufficient
+   - Note this choice in the governance map changelog
+
+Record the choice in the changelog before proceeding to Phase 1.
+
 **Phase 1 — Discovery**
 
 1. Use Gmail MCP to pull all existing labels/folders

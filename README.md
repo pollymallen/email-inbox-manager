@@ -58,6 +58,14 @@ By design, this skill operates with **constrained write access** to your Gmail. 
 
 When something would otherwise be a delete candidate, the skill moves it to a `To Trash` label and archives it out of your inbox. You review and empty `To Trash` on your own cadence in Gmail. If the skill ever mislabels something, it's a two-click fix — not lost mail.
 
+## Before First Use: Backup (Optional but Recommended)
+
+The skill can't delete emails (see Safety above), but onboarding can move a lot of messages between labels during the Consolidation Workshop. For peace of mind, take a backup first:
+
+- **Quick option (built in):** During onboarding, the skill offers to save a `pre-onboarding-snapshot.yaml` with your current label structure and message-to-label mapping. Fast, automatic, enough to reconstruct label assignments if you change your mind.
+- **Full option:** Run [Google Takeout](https://takeout.google.com) — deselect everything, select only "Mail," start the export. Google emails you an `.mbox` file when it's ready (hours for large inboxes). You don't need to wait to proceed; it runs in the background.
+- **Skip:** If you trust the skill and your inbox is small, this is reasonable.
+
 ## Quick Start
 
 ### In Claude Cowork or Claude Code
