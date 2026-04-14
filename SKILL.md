@@ -244,6 +244,22 @@ mode from context, or ask if ambiguous.
 This is the interactive walk-through that builds the governance map from scratch. Run this when 
 no governance map exists yet.
 
+**Phase 0 (Pre-check) — Account Verification**
+
+BEFORE doing anything else, verify which Gmail account is connected. This is a critical safety 
+step — the skill can only act on one account at a time, and acting on the wrong one creates a 
+confusing mess.
+
+1. Call the Gmail MCP to identify the currently-authenticated account (e.g., fetch the user's 
+   profile, or read the "From" field on a recent sent message)
+2. Show the user: "I'm connected to [email@example.com]. Is this the account you want to set up?"
+3. Also state the current working directory and confirm it matches the account (e.g., 
+   `pollymallen-gmail/` folder → `pollymallen@gmail.com` account)
+4. If mismatch, STOP. Tell the user to either:
+   - Swap the Gmail connector in claude.ai Settings → Connectors, restart the session, and try again
+   - Or `cd` to the folder that matches the currently-connected account
+5. Only proceed when the user confirms account + folder are correct
+
 **Phase 0 — Backup Checkpoint**
 
 Before touching anything, offer the user a backup. Frame it honestly — this skill can't delete 
