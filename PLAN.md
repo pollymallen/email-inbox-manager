@@ -32,18 +32,44 @@ Adaptive email management skill that learns the user's personal organization sys
 - [x] README updated with Safety + Backup sections
 - [x] Multi-account folder structure created at `~/projects/personal/email/pollymallen-gmail/`
 
-### Phase 3: Testing & Sharing
-- [ ] **Install `gws` (Google Workspace CLI) as local MCP** — `brew install googleworkspace-cli`, create GCP OAuth Desktop app for `pollymallen@gmail.com`, `gws auth login`, register `gws mcp` in Claude Code MCP config. Avoids disrupting work Gmail connector. (Decision made 2026-04-13 — rejected connector-swap and rejected community wrapper `evolsb/claude-code-google-workspace` after audit.)
-- [ ] Live test: run onboarding against `pollymallen@gmail.com` via gws
+### Phase 2.75: Pre-Live-Test Dry-Run Polish (COMPLETE, 2026-04-13 Session 3)
+Added after a parallel subagent dry-run caught 16 issues before first live test.
+- [x] P0: Fix duplicate "Phase 0" labels → Phase 0a (account) + Phase 0b (backup)
+- [x] P0: Drop assumed Gmail whoami; use `in:sent` From-field as primary account check
+- [x] P0: Document Archive/To Trash/Move tool-mapping explicitly (Archive = `unlabel_thread(INBOX)`)
+- [x] P0: Move `To Trash` label creation to Phase 0a
+- [x] P0: Add Phase 0.5 VIP pre-step; clarify box-rail no-op on first run
+- [x] P1: Cap snapshot at labels + first-100 thread IDs (flaky-wifi safe)
+- [x] P1: Mid-batch MCP failure writes `resume_token`, no silent retry
+- [x] P1: Nudge counter increments on send-approval, not draft
+- [x] P1: Mode 4 date math uses user's local TZ
+- [x] P1: Solo-user escape hatch on team-review block
+- [x] P1: Unify triage_rules condition schema under any/all; document approval_mode precedence
+- [x] P1: Document when to add per-category nudge overrides
+- [x] P2: Phase 3 calibration falls back to recent archived when inbox is empty
+- [x] P2: Dashboard gated behind explicit request (not offered during onboarding)
+- [x] P2: README snapshot description matches SKILL.md
+- [x] **Phase 00 — Welcome & Orientation:** plain-language tour of all 9 phases, skip markers, honest security framing (accurate re: Anthropic data handling, no overclaim)
+- [x] **"You are here" markers** at every phase header
+- [x] **Progressive trust model:** three levels (always ask / session-only `session_auto: true` / persistent `auto`) with explicit downgrade path; graduation prompt has three options not yes/no
+- [x] Reframe "can't delete" as structural (connector has no delete tool), not LLM preference
+- [x] README "Connecting Gmail: Two Options" section (connector vs. gws) written via subagent
+- [x] `SPIN-OFF-skill-evaluator-spec.md` written via subagent
+
+### Phase 3: Live Testing & Sharing
+- [ ] **Push 6 local commits to origin** (blocked on ground wifi)
+- [ ] **Install `gws` (Google Workspace CLI) as local MCP** — `brew install googleworkspace-cli`, create GCP OAuth Desktop app for `pollymallen@gmail.com`, `gws auth login`, register `gws mcp` in Claude Code MCP config
+- [ ] Live test: run onboarding against `pollymallen@gmail.com` via gws — walk all phases (00 → 6)
 - [ ] Refine SKILL.md based on live testing
 - [ ] Add sample "fully populated" governance map as reference
 - [ ] Share at Next Level for entrepreneur feedback
 - [ ] Update README with any changes from testing, document gws setup path
 
 ## What's Next
-- Install `gws` CLI and set up OAuth for `pollymallen@gmail.com`
-- Register `gws mcp` as an MCP server in Claude Code
+- **On ground wifi:** `git push`, then `brew install googleworkspace-cli`
+- Set up OAuth for `pollymallen@gmail.com`, register `gws mcp`
 - Run "Let's set up my email system" in a fresh Claude Code session at `~/projects/personal/email/pollymallen-gmail/`
+- First live test will exercise Phase 00 welcome, account check, and the new progressive trust flow
 - Iterate on SKILL.md prompts based on real-world behavior
 - Eventually: add `polly.allen@aicareerboost.com` as a second gws account
 
@@ -52,10 +78,11 @@ Adaptive email management skill that learns the user's personal organization sys
 - **`skill-evaluator` skill** — open-source skill that audits third-party Claude skills / MCP servers / AI tools by GitHub URL. Rubric-based 1–5 scoring across 5 dimensions: Active Development, Adoption & Community, Security Posture, Code Quality, Trust & Transparency. Output: markdown audit report with per-dimension reasoning and overall verdict (Use / Use with caution / Skip). Pull in the `skill-creator` skill to bootstrap it. Origin: came out of evaluating `evolsb/claude-code-google-workspace` during email-inbox-manager setup (2026-04-13).
 
 ## Key Files
-- `SKILL.md` — skill definition (~613 lines)
-- `templates/governance-map-starter.yaml` — starter template (with schedules + team fields)
-- `README.md` — GitHub-facing docs
+- `SKILL.md` — skill definition (~870 lines)
+- `templates/governance-map-starter.yaml` — starter template
+- `README.md` — GitHub-facing docs (now includes gws setup section)
 - `CONTRIBUTING.md` — contribution guidelines
+- `SPIN-OFF-skill-evaluator-spec.md` — design doc for the backlogged skill-evaluator spin-off
 
 ## Verification
 - Repo: https://github.com/pollymallen/email-inbox-manager
