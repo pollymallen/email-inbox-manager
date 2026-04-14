@@ -81,6 +81,80 @@ The skill can't delete emails (see Safety above), but onboarding can move a lot 
 2. Share the `SKILL.md` content at the start of a conversation
 3. Say: **"Let's set up my email system"**
 
+## Connecting Gmail: Two Options
+
+The skill talks to Gmail via an MCP connector. You have two ways to wire that up. Pick one.
+
+### Why two options?
+
+The claude.ai Gmail connector is the fastest path — one-click auth, nothing to install — but it only holds one Gmail account at a time. If you want to manage a second inbox, you either swap the connector (disrupting whatever else you were using it for) or you run a separate local MCP server that can hold multiple accounts side-by-side. That second path is what `gws` is for.
+
+| | Option A: claude.ai Gmail connector | Option B: `gws` CLI |
+|---|---|---|
+| **Setup** | Click to connect | ~30 min (brew + GCP OAuth + `gws auth login`) |
+| **Accounts** | One at a time | Multiple, switchable |
+| **Runs in** | claude.ai, Cowork, Claude Code | Claude Code (local MCP) |
+| **Good for** | Single inbox, quick start | Managing personal + work, or household + business |
+
+### Option A — claude.ai Gmail MCP connector (simpler)
+
+This is the default path and what the skill was originally built against. One Gmail account, already wired up for most Claude surfaces.
+
+1. In claude.ai, go to Settings → Connectors and connect Gmail (or use Cowork's built-in connector)
+2. Confirm which account is connected — the skill's Phase 0 pre-check will verify this before doing anything
+3. Create or `cd` to a working directory for this account (e.g., `~/projects/personal/email/pollymallen-gmail/`)
+4. Say: **"Let's set up my email system"**
+
+To manage a different account, you swap the connector in claude.ai Settings and restart the session. That's fine if you rarely switch. If you switch often, use Option B instead.
+
+### Option B — `gws` CLI as a local MCP server (multi-account)
+
+[`gws`](https://github.com/googleworkspace/cli) is the official Google Workspace CLI (released March 2026). It runs locally, holds OAuth credentials for multiple Google accounts, and exposes an MCP server so Claude Code can talk to whichever account you've `cd`'d into.
+
+This path takes more upfront setup but means you can have `pollymallen@gmail.com` and `polly.allen@aicareerboost.com` both available without ever swapping a connector.
+
+**1. Install the CLI**
+
+```bash
+brew install googleworkspace-cli
+```
+
+**2. Create a GCP OAuth Desktop client**
+
+Each person running `gws` needs their own OAuth client. It's a one-time setup per machine, not per account.
+
+- Go to https://console.cloud.google.com and create a new project (or reuse one)
+- Open **OAuth consent screen** → User Type: **External** → Publishing status: **Testing**
+- Under **Test users**, add your own Google account(s) — only test users can auth while the app is in Testing mode
+- Go to **Credentials** → **Create credentials** → **OAuth client ID** → Application type: **Desktop app**
+- Download the JSON and save it to `~/.config/gws/client_secret.json`
+
+**3. Authenticate each account**
+
+```bash
+gws auth login
+```
+
+Run this once per Gmail account you want to manage. `gws` will open a browser window for each one. See `gws auth --help` for switching between authenticated accounts.
+
+**4. Register `gws mcp` as an MCP server in Claude Code**
+
+`gws` ships an MCP server as a subcommand. The exact registration flags depend on your Claude Code version — check `gws mcp --help` and the [gws repo](https://github.com/googleworkspace/cli) for current instructions. Once registered, restart Claude Code and verify the `gws` tools show up.
+
+**5. Folder convention: one working directory per account**
+
+The skill persists its governance map (and all learned rules) to the current working directory. To keep accounts cleanly separated, use one folder per account:
+
+```
+~/projects/personal/email/
+  pollymallen-gmail/          # personal Gmail
+    email-governance-map.yaml
+  pollyallen-aicareerboost/   # work Gmail
+    email-governance-map.yaml
+```
+
+`cd` into the folder for whichever account you want to work on, then start Claude Code. The skill's Phase 0 pre-check confirms the connected account matches the folder before touching anything.
+
 ## The Governance Map
 
 The heart of the skill is a YAML file that captures everything it learns about your email system. It's designed to be:
