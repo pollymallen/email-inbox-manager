@@ -63,7 +63,7 @@ When something would otherwise be a delete candidate, the skill moves it to a `T
 
 The skill can't delete emails (see Safety above), but onboarding can move a lot of messages between labels during the Consolidation Workshop. For peace of mind, take a backup first:
 
-- **Quick option (built in):** During onboarding, the skill offers to save a `pre-onboarding-snapshot.yaml` with your current label structure and message-to-label mapping. Fast, automatic, enough to reconstruct label assignments if you change your mind.
+- **Quick option (built in):** During onboarding, the skill offers to save a `pre-onboarding-snapshot.yaml` with your current label structure and a sample of thread IDs per label. Opt-in, fast, and enough to spot-check a rollback — not a full backup. For a true archive, use Google Takeout.
 - **Full option:** Run [Google Takeout](https://takeout.google.com) — deselect everything, select only "Mail," start the export. Google emails you an `.mbox` file when it's ready (hours for large inboxes). You don't need to wait to proceed; it runs in the background.
 - **Skip:** If you trust the skill and your inbox is small, this is reasonable.
 

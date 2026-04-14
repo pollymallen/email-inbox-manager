@@ -258,7 +258,74 @@ mode from context, or ask if ambiguous.
 This is the interactive walk-through that builds the governance map from scratch. Run this when 
 no governance map exists yet.
 
+**Phase 00 — Welcome & Orientation (ALWAYS run first)**
+
+Many users of this skill are new to Claude Code or Cowork. Before doing anything, deliver a 
+friendly orientation so they know what they're signing up for and why it's safe. Do this every 
+time onboarding starts — don't skip it even if the user seems experienced. You can be brief if 
+they say "I know how this works, just get started."
+
+Say something close to this (adapt tone to the user):
+
+> **Welcome.** Before we touch anything, here's what's about to happen and why this is safe.
+>
+> **What we're going to do, start to finish:**
+>
+> 1. **Phase 0a — Account check.** I confirm which Gmail is connected so we don't work on the 
+>    wrong one. *(required, takes seconds)*
+> 2. **Phase 0b — Backup checkpoint.** Optional lightweight snapshot of your label structure, 
+>    or a Google Takeout if you want a full archive. *(skippable)*
+> 3. **Phase 0.5 — Historical cleanup.** Optional bulk pass on old newsletters, social 
+>    notifications, and stale auto-notifications. Only offered if your inbox is large or old. 
+>    *(skippable; you approve every batch before it moves)*
+> 4. **Phase 1 — Discovery.** I read your existing labels and show you the landscape. 
+>    *(read-only, nothing changes)*
+> 5. **Phase 2 — Consolidation.** We talk through which labels to merge, rename, or archive. 
+>    Nothing moves until you approve the plan. If you have a team, we generate a migration 
+>    plan to share with them first.
+> 6. **Phase 3 — Triage calibration.** We walk through ~20 recent emails together so I learn 
+>    your triage style.
+> 7. **Phase 4 — Newsletter audit.** *(skippable)* Find newsletters, choose keep / digest / 
+>    unsubscribe per sender.
+> 8. **Phase 5 — Preferences & schedules.** How you want reports, dashboards, and any 
+>    automated runs. *(all optional)*
+> 9. **Phase 6 — Review & commit.** I save the full governance map and we're done.
+>
+> Total time: 30–60 minutes for a clean run. You can pause anytime — progress is saved to 
+> files so a fresh session can pick up where you left off.
+>
+> **Why this is safe** *(worth reading if you're new to AI tools):*
+>
+> - **Your email stays in Gmail.** I read messages on demand for the task we're doing — I 
+>   don't copy your inbox anywhere, and there's no third-party database sitting in the 
+>   middle. The connection is OAuth directly to Google.
+> - **Everything I create is plain text on your laptop.** The governance map, snapshots, and 
+>   logs are YAML and Markdown files in this folder. Open them in any editor. Edit them by 
+>   hand if you want. Port them to another tool later. **No lock-in.**
+> - **I can't delete your email.** Hard limit, not a preference. The worst I can do is apply 
+>   a `To Trash` label — you empty it yourself, in Gmail, whenever you want.
+> - **Nothing commits without your approval.** I show you the plan, you say go. Bulk actions 
+>   move in batches with previews. You can stop at any point.
+> - **About Anthropic's side of the LLM call:** Each time I process an email, that content is 
+>   sent to Anthropic's API for that request. Anthropic's current policy is that API inputs 
+>   are not used to train models by default, and API content is retained only briefly for 
+>   abuse detection. For the specifics, check Anthropic's privacy & usage policies directly 
+>   — I don't want to paraphrase something that may have changed. If you want zero cloud 
+>   processing, this skill is the wrong tool; any LLM-based assistant sends data to a model 
+>   provider.
+> - **You can walk away clean.** Delete the governance map file and there's no trace of this 
+>   skill on your system. Your Gmail is unchanged except for whatever labels you approved.
+>
+> **Pacing:** You're in charge. I'll tell you which phase we're in, what's next, and what's 
+> optional. If you want to skip a phase, just say so.
+>
+> Ready to start with the account check?
+
+After the user says yes, proceed to Phase 0a.
+
 **Phase 0a — Account Verification (Pre-check)**
+
+**You are here:** Phase 0a of 9 · Next: Phase 0b (backup) · *Required*
 
 BEFORE doing anything else, verify which Gmail account is connected. This is a critical safety 
 step — the skill can only act on one account at a time, and acting on the wrong one creates a 
@@ -281,6 +348,8 @@ confusing mess.
    "delete-like" action and is required by Phase 0.5 and Phase 2.
 
 **Phase 0b — Backup Checkpoint**
+
+**You are here:** Phase 0b of 9 · Next: Phase 0.5 (historical cleanup) or Phase 1 · *Skippable*
 
 Before touching anything, offer the user a backup. Frame it honestly — this skill can't delete 
 emails (see Permission Model), but Phase 2 consolidation can move a lot of messages between 
@@ -311,6 +380,8 @@ Offer three options:
 Record the choice in the changelog before proceeding to Phase 1.
 
 **Phase 0.5 — Historical Cleanup (Optional)**
+
+**You are here:** Phase 0.5 of 9 · Next: Phase 1 (discovery) · *Skippable; only offered if inbox is large or old*
 
 For large or long-lived inboxes, offer a bulk cleanup pass on old low-value email BEFORE 
 Phase 1 discovery. This makes the rest of onboarding dramatically more useful — Phase 1's 
@@ -389,6 +460,8 @@ notifications go?" you can answer precisely from the log.
 
 **Phase 1 — Discovery**
 
+**You are here:** Phase 1 of 9 · Next: Phase 2 (consolidation) · *Required, read-only*
+
 1. Use Gmail MCP to pull all existing labels/folders
 2. For each label, get the message count and date of most recent message
 3. Present a summary: "You have N labels. Here's the landscape:"
@@ -398,6 +471,8 @@ notifications go?" you can answer precisely from the log.
 4. Ask: "Does this match your mental model? Anything surprising?"
 
 **Phase 2 — Consolidation Workshop**
+
+**You are here:** Phase 2 of 9 · Next: Phase 3 (triage calibration) · *Required; nothing moves without your approval*
 
 Walk through labels in groups, starting with the dead/dormant ones:
 
@@ -415,7 +490,12 @@ team review period has passed.
 
 **Phase 3 — Triage Calibration**
 
-1. Pull the 20 most recent inbox messages
+**You are here:** Phase 3 of 9 · Next: Phase 4 (newsletters) · *Required*
+
+1. Pull the 20 most recent inbox messages. **If the inbox has fewer than 15 recent 
+   messages (e.g., the user is already at inbox zero, or just finished Phase 0.5 cleanup), 
+   fall back to recent archived messages** from the last 30 days via `search_threads` — 
+   without samples, rule proposals won't be grounded in the user's real patterns.
 2. For each message, show the user: sender, subject, date, and a brief snippet
 3. Ask: "What would you do with this?"
    - Box 1 (waiting for reply)
@@ -441,6 +521,8 @@ triage, upgrade the rule to `auto`.
 
 **Phase 4 — Newsletter Audit**
 
+**You are here:** Phase 4 of 9 · Next: Phase 5 (preferences) · *Skippable*
+
 1. Search for common newsletter patterns: "unsubscribe" in body, known newsletter 
    senders, high-frequency same-sender emails
 2. Present the list: "I found [N] newsletters you're subscribed to:"
@@ -451,11 +533,15 @@ triage, upgrade the rule to `auto`.
 
 **Phase 5 — Communication Preferences**
 
+**You are here:** Phase 5 of 9 · Next: Phase 6 (review & commit) · *All sub-options skippable*
+
 1. Ask how they want to be notified about uncertain emails
 2. Ask about weekly reporting preferences
 3. Ask if they want a dashboard for querying their email
 
 **Phase 6 — Review and Commit**
+
+**You are here:** Phase 6 of 9 · Next: Done — ongoing triage in Mode 2 · *Required*
 
 1. Generate the complete governance map YAML file
 2. Present a readable summary: "Here's your email system:"
@@ -798,10 +884,13 @@ If the user wants a gradual transition instead of a hard cutover:
 - The "Where does X go now?" query (Mode 6) is designed for team members — they can 
   ask in plain language and get the current routing answer
 
-## Dashboard (Optional)
+## Dashboard (Optional, explicit opt-in)
 
-When running in claude.ai or an environment that supports React artifacts, 
-the skill can generate an interactive dashboard showing:
+Do NOT offer or build the dashboard during onboarding — it's out of scope for the initial 
+setup. Only build it when the user explicitly asks ("build me a dashboard," "show me the 
+dashboard view," etc.) and only in an environment that supports React artifacts.
+
+When invoked, the dashboard can show:
 
 - Current inbox status (messages per box)
 - Recent auto-filed items with the ability to override
