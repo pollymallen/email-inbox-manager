@@ -78,6 +78,10 @@ triage_boxes:
     description: "Waiting for a reply from someone else"
     label: "Box 1 - Waiting"
     check_cadence: "daily"
+    # `default` applies to any waiting thread. Add per-category overrides (sales, personal,
+    # etc.) when the user's behavior clearly differs by context — e.g. during triage
+    # calibration they nudge sales leads faster than personal threads. Don't add overrides
+    # preemptively; wait until the user's actual cadence makes it clear.
     nudge_rules:
       default:
         nudge_after_days: [3, 7, 14]
@@ -177,7 +181,16 @@ newsletters:
     format: "summary"  # summary | full | headlines
 
 # Triage rules — the decision tree for incoming email
-# Rules are evaluated in order; first match wins
+# Rules are evaluated in order; first match wins.
+#
+# Condition schema: always wrap matchers in `any:` (OR) or `all:` (AND). Each matcher is
+# one of: sender_contains (list), sender_domain (list), subject_contains (list),
+# body_contains (list), has_label (list), older_than (e.g. "30d"), newer_than.
+# Never use a bare `sender_contains:` at the top of a condition — always nest under any/all.
+#
+# Approval-mode precedence: a rule's `approval_mode` always wins over the account-level
+# `confidence_mode`. confidence_mode sets the default for NEW rules; it does not override
+# rules that already have an explicit approval_mode.
 triage_rules:
   - id: rule_001
     name: "Payment confirmations"
@@ -195,7 +208,8 @@ triage_rules:
   - id: rule_002
     name: "Calendar notifications"
     condition:
-      sender_contains: "calendar-notification"
+      all:
+        - sender_contains: ["calendar-notification"]
     action: "auto_file"
     file_to: "Calendar"
     confidence: "high"
@@ -275,10 +289,14 @@ labels, and some users want a rollback point.
 Offer three options:
 
 1. **Snapshot label structure (recommended default, fast)**
-   - Pull all labels, message counts, and message IDs per label
+   - Pull all labels and their message counts via `list_labels`
+   - For each label, pull the first 100 thread IDs (not all — just enough to spot-check 
+     a rollback). Full-inbox ID enumeration can be tens of thousands of API calls and is 
+     a bad idea on flaky wifi.
    - Save as `pre-onboarding-snapshot.yaml` in the working directory
-   - This is enough to reconstruct label assignments if needed
-   - Takes ~1 minute depending on inbox size
+   - Warn the user: "This is a lightweight snapshot, not a full backup. For a true backup 
+     use Google Takeout (option 2)."
+   - Takes well under a minute on most inboxes
 
 2. **Full Gmail export via Google Takeout**
    - Direct the user to https://takeout.google.com
@@ -350,7 +368,11 @@ them under `historical_cleanup.vip_senders` in the governance map.
    a. Build the Gmail search query (`older_than:2y category:promotions has:unsubscribe`, etc.)
    b. Count matches, pull 5 random samples, show to user
    c. User approves / adjusts / skips
-   d. On approval: apply the action in batches of ~500, with progress updates
+   d. On approval: apply the action in batches of ~500, with progress updates. 
+      **On MCP failure mid-batch:** stop immediately, log the last successfully-processed 
+      thread ID and the remaining search query to the changelog as a `resume_token` entry, 
+      tell the user what happened, and offer to resume when the connection is back. Do 
+      NOT retry silently — partial batches with no record create drift.
    e. Log the action to changelog with the exact search query and count
 4. At the end, summarize: "Moved [N] to Archive, [M] to To Trash. Your inbox is now 
    [X]% smaller. Let's move on to Discovery."
@@ -473,8 +495,11 @@ For checking Box 1 (waiting for reply) items.
 2. Pull all messages in Box 1
 3. For each, check how long it's been waiting and the nudge policy
 4. Present items that are due for a nudge: "These items have been waiting:"
-5. For each nudge-ready item, draft a follow-up email for user review
-6. Track nudge count in the governance map
+5. For each nudge-ready item, draft a follow-up email for user review via `create_draft`
+6. **Increment `nudge_count` only after the user approves and sends the draft**, not when 
+   it's drafted. A drafted-but-discarded nudge should not count against `max_nudges`. 
+   Persist the sent timestamp and new nudge count to the thread's entry in the governance 
+   map changelog.
 
 ### Mode 4: Query / Search
 
@@ -494,7 +519,10 @@ exact names, dates, or subjects. They'll ask things like:
 
 2. **Build a smart search** — translate the fuzzy query into Gmail MCP search:
    - Partial names → search sender/recipient fields with what you have
-   - "Last week" → convert to date range (after:YYYY/MM/DD before:YYYY/MM/DD)
+   - "Last week" → convert to date range (after:YYYY/MM/DD before:YYYY/MM/DD). 
+     Compute dates from the **user's local timezone** (Pacific Time by default for Polly — 
+     see global context); don't trust Claude's session date if the session has been open 
+     across a day boundary.
    - Topics → search subject and body
    - Combine multiple signals: `from:adam subject:blueprint newer_than:7d`
    - If the first search is too broad, narrow it; if too narrow, broaden it
@@ -743,7 +771,11 @@ When a team is involved, follow this process:
 2. **Ask the user how long the team needs to review** — suggest 3-5 business days as default
 3. **Save the migration plan** as `migration-plan.md` in the working directory
 4. **Do NOT execute label changes yet** — mark the governance map as `status: pending_review`
-5. **When the user says the team has signed off**, proceed with execution
+5. **When the user says the team has signed off**, proceed with execution. Unlock phrases: 
+   "My team signed off," "Team approved," "Go ahead." Also accept a **solo-user escape 
+   hatch**: if the user says "there's no team actually" or "I'll proceed without team 
+   signoff," flip `has_team: false` and proceed. Don't trap a user who toggled `has_team: 
+   true` by accident.
 6. **After execution, keep the migration plan** as a permanent reference — the team can 
    always open it to see the old→new mapping
 

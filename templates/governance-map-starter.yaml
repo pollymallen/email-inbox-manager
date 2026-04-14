@@ -19,6 +19,9 @@ account:
   # moderate: auto-handle high-confidence rules, ask for the rest
   # autonomous: auto-handle everything above the confidence threshold
   status: pending_review  # pending_review | active
+  # `pending_review` is the default while onboarding is in progress or a team review is
+  # open. Flipped to `active` once onboarding Phase 6 completes (solo user) or the team
+  # signs off (team user). A rule's `approval_mode` always wins over `confidence_mode`.
   team:
     has_team: false          # set during onboarding
     review_period_days: 5    # how long the team gets to review before changes go live
@@ -166,12 +169,15 @@ schedules:
 historical_cleanup:
   performed: false
   date: null
-  categories: []   # e.g.:
-                   # - name: old_newsletters
-                   #   age_threshold: "2y"
-                   #   action: to_trash
-                   #   query: "older_than:2y category:promotions has:unsubscribe"
-                   #   count: 2347
+  vip_senders: []  # captured in the Phase 0.5 pre-step — senders/domains to never touch
+  categories: []
+  # Each category entry looks like:
+  #   - name: old_newsletters
+  #     age_threshold: "2y"
+  #     action: to_trash          # to_trash | archive
+  #     query: "older_than:2y category:promotions has:unsubscribe"
+  #     count: 2347
+  #     resume_token: null         # set if a batch failed mid-run
   skipped_categories: []
 
 # ─────────────────────────────────────────
