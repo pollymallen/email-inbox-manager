@@ -54,6 +54,11 @@ triage_boxes:
     description: "Informational updates — acknowledged, closed out, filed"
     report_cadence: "weekly"
 
+  to_trash:
+    description: "Quarantine for deletion candidates. The skill NEVER deletes — you empty this label manually in Gmail on your own cadence."
+    label: "To Trash"
+    review_cadence: "weekly"
+
 # ─────────────────────────────────────────
 # LABEL TAXONOMY
 # ─────────────────────────────────────────

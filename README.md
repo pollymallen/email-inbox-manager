@@ -37,6 +37,27 @@ The skill starts by asking you about every email. As you confirm its suggestions
 - **📊 Weekly Reports** — Summarizes what got sorted, what's waiting, and what needs attention
 - **🗺️ Team Reference** — Anyone on your team can ask "where does X go?" and get the answer
 
+## Safety: What This Skill Can and Can't Do
+
+By design, this skill operates with **constrained write access** to your Gmail. Nothing it does is irreversible.
+
+**✅ Allowed:**
+- Read messages, threads, and labels
+- Create new labels (including a `To Trash` quarantine label)
+- Apply, remove, and move messages between labels
+- Archive (remove from inbox)
+- Create Gmail drafts for your review
+
+**❌ Not allowed:**
+- Permanently deleting emails
+- Moving messages to Gmail's native Trash (which auto-purges after 30 days)
+- Sending emails without your explicit approval of the draft
+- Emptying the `To Trash` label — only you do that, manually in Gmail
+
+### The "To Trash" Pattern
+
+When something would otherwise be a delete candidate, the skill moves it to a `To Trash` label and archives it out of your inbox. You review and empty `To Trash` on your own cadence in Gmail. If the skill ever mislabels something, it's a two-click fix — not lost mail.
+
 ## Quick Start
 
 ### In Claude Cowork or Claude Code

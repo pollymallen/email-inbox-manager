@@ -99,6 +99,11 @@ triage_boxes:
     description: "Informational updates that are complete — acknowledged and filed"
     report_cadence: "weekly"  # How often to summarize auto-filed items
 
+  to_trash:
+    description: "Candidates for deletion — quarantined here. The skill NEVER deletes; the user empties this label manually."
+    label: "To Trash"
+    review_cadence: "weekly"  # Remind the user to review and empty
+
 # Label taxonomy — the consolidated folder structure
 taxonomy:
   active_labels:
@@ -268,7 +273,8 @@ team review period has passed.
    - Box 2 (you need to act)
    - Box 3 (you need to review)
    - Auto-file (it's done, just informational)
-   - Delete/archive
+   - Archive (keep but out of inbox)
+   - Send to "To Trash" (quarantine for your later review — the skill never deletes)
 4. After each answer, look for patterns: "I notice you're putting all messages from 
    [sender] into Box 3. Should that be a rule?"
 5. After ~15-20 calibration emails, propose a set of triage rules
@@ -515,9 +521,37 @@ When the user asks "what have you been doing with my email?" or "show me your ac
 3. Show any rules that were proposed but not yet approved
 4. Show confidence trend (% auto-handled over time)
 
+## Permission Model
+
+The skill operates with **constrained write access**. These rules are hard limits — do not 
+bypass them even if the user asks:
+
+**Allowed:**
+- Read messages, threads, and labels
+- Create new labels (including the `To Trash` quarantine label during onboarding)
+- Apply, remove, and move messages between labels
+- Archive (remove from inbox)
+- Create Gmail drafts for the user to review
+
+**Not allowed:**
+- Permanently deleting emails
+- Moving messages to Gmail's native Trash (which auto-purges after 30 days)
+- Sending emails without explicit user approval of the draft
+- Emptying the `To Trash` label — only the user does that, manually in Gmail
+
+### The "To Trash" Quarantine Pattern
+
+When an email would otherwise be a delete candidate (user says "delete this," triage rule 
+matches a deletion pattern, etc.), apply the `To Trash` label and archive it out of the inbox. 
+The user reviews and empties `To Trash` on their own cadence. This is non-destructive by design: 
+nothing the skill does is irreversible.
+
+During onboarding Phase 2, create the `To Trash` label if it doesn't already exist and note it 
+in the governance map under `triage_boxes.to_trash`.
+
 ## Error Handling and Safety
 
-- **Never delete emails** — only archive, label, or move
+- **Never delete** — see Permission Model above. Use `To Trash` for quarantine.
 - **Never send emails** without explicit user approval of the draft
 - **Always confirm** before making bulk label changes (>10 messages)
 - **Back up the governance map** before major updates (copy to 
