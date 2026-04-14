@@ -23,18 +23,29 @@ Adaptive email management skill that learns the user's personal organization sys
 - [x] Status communication: draft email / Slack / file delivery, anomaly detection, confidence tracking
 - [x] Expanded query mode: fuzzy conversational search, smart Gmail search building, governance map cross-reference
 
+### Phase 2.5: Safety & Onboarding Hardening (COMPLETE, 2026-04-13)
+- [x] Permission model: constrained write access, never deletes, `To Trash` quarantine label
+- [x] Phase 0 — Backup Checkpoint (snapshot / Takeout / skip) before any action
+- [x] Phase 0 Pre-check — account verification step (confirm connected Gmail matches folder)
+- [x] Phase 0.5 — Historical Cleanup for large/old inboxes (bulk archive of old newsletters, social notifications, expired calendar invites, long-dormant threads) with safety rails
+- [x] Stronger trigger description to prevent empty-dir design-from-scratch failure
+- [x] README updated with Safety + Backup sections
+- [x] Multi-account folder structure created at `~/projects/personal/email/pollymallen-gmail/`
+
 ### Phase 3: Testing & Sharing
-- [ ] Live test: run onboarding with actual Gmail account ("Let's set up my email system")
+- [ ] **Install `gws` (Google Workspace CLI) as local MCP** — `brew install googleworkspace-cli`, create GCP OAuth Desktop app for `pollymallen@gmail.com`, `gws auth login`, register `gws mcp` in Claude Code MCP config. Avoids disrupting work Gmail connector. (Decision made 2026-04-13 — rejected connector-swap and rejected community wrapper `evolsb/claude-code-google-workspace` after audit.)
+- [ ] Live test: run onboarding against `pollymallen@gmail.com` via gws
 - [ ] Refine SKILL.md based on live testing
 - [ ] Add sample "fully populated" governance map as reference
 - [ ] Share at Next Level for entrepreneur feedback
-- [ ] Update README with any changes from testing
+- [ ] Update README with any changes from testing, document gws setup path
 
 ## What's Next
-- Test the onboarding flow with Polly's Gmail in a new session
+- Install `gws` CLI and set up OAuth for `pollymallen@gmail.com`
+- Register `gws mcp` as an MCP server in Claude Code
+- Run "Let's set up my email system" in a fresh Claude Code session at `~/projects/personal/email/pollymallen-gmail/`
 - Iterate on SKILL.md prompts based on real-world behavior
-- Consider adding a sample populated governance map for reference
-- Share at Next Level and collect feedback
+- Eventually: add `polly.allen@aicareerboost.com` as a second gws account
 
 ## Backlog (Spin-off Ideas)
 
