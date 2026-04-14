@@ -56,29 +56,43 @@ Added after a parallel subagent dry-run caught 16 issues before first live test.
 - [x] README "Connecting Gmail: Two Options" section (connector vs. gws) written via subagent
 - [x] `SPIN-OFF-skill-evaluator-spec.md` written via subagent
 
+### Phase 2.9: Transport Pivot (COMPLETE, 2026-04-14 Session 4)
+Added after discovering `gws` CLI does not ship an MCP server — Session 2/3 assumption was wrong. Skill now supports claude.ai connector OR gws-via-Bash (no MCP wrapper).
+- [x] Push 7 local commits to origin
+- [x] `brew install googleworkspace-cli` (0.22.5)
+- [x] Discover `gws` has no `mcp` subcommand; architecture pivot required
+- [x] Choose Option 1: gws-via-Bash transport (skill invokes `gws` via Bash tool, same pattern as `gdrive` CLI)
+- [x] Write new SKILL.md "Transport Layer" section with full operation→transport mapping table
+- [x] Update Prerequisites, Phase 0a account check, delete-guarantee language (structural vs policy per transport), tool mapping, error handling
+- [x] Update README Option B — drop obsolete `gws mcp` registration step, add `gws auth setup --login` path, add verification commands
+- [x] Commit + push transport rewrite (eac73d9)
+
 ### Phase 3: Live Testing & Sharing
-- [ ] **Push 6 local commits to origin** (blocked on ground wifi)
-- [ ] **Install `gws` (Google Workspace CLI) as local MCP** — `brew install googleworkspace-cli`, create GCP OAuth Desktop app for `pollymallen@gmail.com`, `gws auth login`, register `gws mcp` in Claude Code MCP config
+- [x] Push local commits to origin
+- [x] Install `gws` CLI
+- [x] OAuth setup under work GCP (`email-inbox-mgr-polly`) — consent screen, Desktop client, client_secret.json, Gmail API enabled, `gws auth login` as pollymallen@gmail.com
+- [ ] **BLOCKED: Redo GCP project under personal gcloud** — work GCP org policy `constraints/iam.allowedPolicyMemberDomains` prevents granting pollymallen@gmail.com IAM roles on aicareerboost.com-org projects. Option A is dead. Flip to Option B: `gcloud auth login` as pollymallen@gmail.com, create project outside any org, redo OAuth consent + Desktop client, replace `~/.config/gws/client_secret.json`
+- [ ] Re-run `gws auth login --scopes "https://www.googleapis.com/auth/gmail.modify"` (explicit scope; avoid picker which previously selected readonly)
+- [ ] Verify `gws gmail users getProfile` succeeds without 403
 - [ ] Live test: run onboarding against `pollymallen@gmail.com` via gws — walk all phases (00 → 6)
 - [ ] Refine SKILL.md based on live testing
 - [ ] Add sample "fully populated" governance map as reference
 - [ ] Share at Next Level for entrepreneur feedback
-- [ ] Update README with any changes from testing, document gws setup path
+- [ ] Update README with any changes from testing
+- [ ] (Optional cleanup) Delete abandoned `email-inbox-mgr-polly` project from work GCP
 
 ## What's Next
-- **On ground wifi:** `git push`, then `brew install googleworkspace-cli`
-- Set up OAuth for `pollymallen@gmail.com`, register `gws mcp`
-- Run "Let's set up my email system" in a fresh Claude Code session at `~/projects/personal/email/pollymallen-gmail/`
-- First live test will exercise Phase 00 welcome, account check, and the new progressive trust flow
-- Iterate on SKILL.md prompts based on real-world behavior
-- Eventually: add `polly.allen@aicareerboost.com` as a second gws account
+- Redo GCP project under `pollymallen@gmail.com` personal gcloud (outside any org — avoids `allowedPolicyMemberDomains`). See SESSION-LOG.md Session 4 "To resume" for full 10-step checklist.
+- After that: first live test at `~/projects/personal/email/pollymallen-gmail/`, exercising Phase 00 welcome, progressive trust, gws transport end-to-end.
+- Iterate on SKILL.md prompts based on real behavior.
+- Eventually: add `polly.allen@aicareerboost.com` as a second gws-authenticated account (same OAuth client works for multiple test users).
 
 ## Backlog (Spin-off Ideas)
 
 - **`skill-evaluator` skill** — open-source skill that audits third-party Claude skills / MCP servers / AI tools by GitHub URL. Rubric-based 1–5 scoring across 5 dimensions: Active Development, Adoption & Community, Security Posture, Code Quality, Trust & Transparency. Output: markdown audit report with per-dimension reasoning and overall verdict (Use / Use with caution / Skip). Pull in the `skill-creator` skill to bootstrap it. Origin: came out of evaluating `evolsb/claude-code-google-workspace` during email-inbox-manager setup (2026-04-13).
 
 ## Key Files
-- `SKILL.md` — skill definition (~870 lines)
+- `SKILL.md` — skill definition (~970 lines; new Transport Layer section added Session 4)
 - `templates/governance-map-starter.yaml` — starter template
 - `README.md` — GitHub-facing docs (now includes gws setup section)
 - `CONTRIBUTING.md` — contribution guidelines
