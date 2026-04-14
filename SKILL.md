@@ -244,23 +244,29 @@ mode from context, or ask if ambiguous.
 This is the interactive walk-through that builds the governance map from scratch. Run this when 
 no governance map exists yet.
 
-**Phase 0 (Pre-check) — Account Verification**
+**Phase 0a — Account Verification (Pre-check)**
 
 BEFORE doing anything else, verify which Gmail account is connected. This is a critical safety 
 step — the skill can only act on one account at a time, and acting on the wrong one creates a 
 confusing mess.
 
-1. Call the Gmail MCP to identify the currently-authenticated account (e.g., fetch the user's 
-   profile, or read the "From" field on a recent sent message)
+1. **Identify the connected account.** The Gmail MCP connector does not expose a `whoami` / 
+   `get_profile` tool, so identify the account indirectly: call `search_threads` with 
+   `in:sent` (limit 1) and read the `From` field of the most recent sent message. If no 
+   sent messages exist, fall back to asking the user to confirm the address explicitly.
 2. Show the user: "I'm connected to [email@example.com]. Is this the account you want to set up?"
 3. Also state the current working directory and confirm it matches the account (e.g., 
    `pollymallen-gmail/` folder → `pollymallen@gmail.com` account)
-4. If mismatch, STOP. Tell the user to either:
+4. If mismatch or the user says no, STOP. Tell the user to either:
    - Swap the Gmail connector in claude.ai Settings → Connectors, restart the session, and try again
    - Or `cd` to the folder that matches the currently-connected account
-5. Only proceed when the user confirms account + folder are correct
+   Do NOT proceed to Phase 0b until the user explicitly confirms account + folder are correct. 
+   Exit the skill cleanly on "no."
+5. **Create the `To Trash` label now** (before any phase that might use it). Call 
+   `list_labels` to check if it exists; if not, create it. This label is the skill's only 
+   "delete-like" action and is required by Phase 0.5 and Phase 2.
 
-**Phase 0 — Backup Checkpoint**
+**Phase 0b — Backup Checkpoint**
 
 Before touching anything, offer the user a backup. Frame it honestly — this skill can't delete 
 emails (see Permission Model), but Phase 2 consolidation can move a lot of messages between 
@@ -317,10 +323,20 @@ candidates in batches and you approve each batch before anything moves."
 | Old auto-notifications | GitHub, Jira, CI/CD, monitoring alerts | >1 year | Archive |
 | Long-dormant threads | No activity, not starred, not VIP | >3 years | Archive |
 
+**Pre-step — VIP senders.** Before running any category, ask: "Are there any senders or 
+domains I should never touch during cleanup, even if they'd otherwise match? (family, key 
+clients, your lawyer, etc.)" Capture these as a VIP protect-list for this phase and persist 
+them under `historical_cleanup.vip_senders` in the governance map.
+
 **Safety rails — DO NOT bypass even if asked:**
 - Never touch: starred, important, sent-by-user, drafts
-- Never touch: messages from senders the user has flagged as VIP during onboarding
-- Never touch: messages in the user's currently-active triage boxes (Box 1/2/3 if they exist)
+- Never touch: messages from the VIP protect-list captured in the pre-step above
+- Never touch: messages already in pre-existing user triage boxes, if any exist (on a 
+  first-time account with no boxes yet, this rail is a no-op — that's expected)
+- "Archive" in this phase means remove the `INBOX` label via `unlabel_thread` (Gmail has 
+  no separate archive action). The thread stays searchable, just out of the inbox.
+- "`To Trash`" means apply the `To Trash` label AND remove `INBOX` via `unlabel_thread`. 
+  The skill never calls Gmail's native delete/trash.
 - Default action for archivable categories is Archive, NOT `To Trash` — archive preserves 
   searchability. Only obvious junk (old newsletters, social notifications) defaults to `To Trash`
 - Show sample + count before each batch moves: "This matches 2,347 messages. Here are 5 
@@ -657,8 +673,15 @@ matches a deletion pattern, etc.), apply the `To Trash` label and archive it out
 The user reviews and empties `To Trash` on their own cadence. This is non-destructive by design: 
 nothing the skill does is irreversible.
 
-During onboarding Phase 2, create the `To Trash` label if it doesn't already exist and note it 
-in the governance map under `triage_boxes.to_trash`.
+The `To Trash` label is created during **Phase 0a** (before any phase that might use it) and 
+noted in the governance map under `triage_boxes.to_trash`. If for any reason it's missing when 
+Phase 0.5 or Phase 2 needs it, create it then — but the default path is Phase 0a.
+
+**Tool mapping (Gmail MCP):**
+- "Archive a thread" → `unlabel_thread(thread_id, "INBOX")`
+- "Send to `To Trash`" → `label_thread(thread_id, "To Trash")` + `unlabel_thread(thread_id, "INBOX")`
+- "Move to a box" → `label_thread(thread_id, "<box label>")` + `unlabel_thread(thread_id, "INBOX")`
+- Never call any delete/trash tool, even if one appears in the MCP surface.
 
 ## Error Handling and Safety
 
