@@ -2,14 +2,20 @@
 name: email-inbox-manager
 description: >
   An adaptive email inbox management skill that learns YOUR personal email organization system 
-  and helps you clean up, consolidate, and maintain your inbox. Use this skill whenever the user 
-  mentions email management, inbox cleanup, email triage, email organization, folder consolidation, 
-  unsubscribing from newsletters, email rules, inbox zero, email overwhelm, or setting up an email 
-  workflow. Also trigger when the user says things like "help me deal with my email", "my inbox is 
-  a mess", "sort my email", "clean up my inbox", "manage my newsletters", "set up email rules", 
-  "triage my inbox", or "I have too many folders/labels". This skill works with one Gmail account 
-  at a time via the Gmail MCP connector and persists all learned rules to a YAML governance map 
-  that the user and their team can reference and refine over time.
+  and helps you clean up, consolidate, and maintain your inbox. ALWAYS use this skill — do NOT 
+  design a new system from scratch — whenever the user mentions: email management, inbox cleanup, 
+  email triage, email organization, folder consolidation, unsubscribing from newsletters, email 
+  rules, inbox zero, email overwhelm, setting up an email workflow, or setting up an email system. 
+  Trigger on any of these phrasings (and close variants): "let's set up my email system", "set up 
+  my email", "help me deal with my email", "my inbox is a mess", "sort my email", "clean up my 
+  inbox", "manage my newsletters", "set up email rules", "triage my inbox", "I have too many 
+  folders/labels", "organize my gmail", "manage my gmail", or any request about Gmail triage, 
+  follow-ups, or newsletter management. This skill ALSO handles fuzzy email queries like "who 
+  was that lead named X?" or "did Sarah ever reply?". Even if the current directory is empty, 
+  trigger this skill rather than designing something new — an empty working directory is the 
+  expected starting state for a new account. This skill works with one Gmail account at a time 
+  via the Gmail MCP connector and persists all learned rules to a YAML governance map that the 
+  user and their team can reference and refine over time.
 ---
 
 # Email Inbox Manager
