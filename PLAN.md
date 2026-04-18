@@ -70,22 +70,22 @@ Added after discovering `gws` CLI does not ship an MCP server — Session 2/3 as
 ### Phase 3: Live Testing & Sharing
 - [x] Push local commits to origin
 - [x] Install `gws` CLI
-- [x] OAuth setup under work GCP (`email-inbox-mgr-polly`) — consent screen, Desktop client, client_secret.json, Gmail API enabled, `gws auth login` as pollymallen@gmail.com
-- [ ] **BLOCKED: Redo GCP project under personal gcloud** — work GCP org policy `constraints/iam.allowedPolicyMemberDomains` prevents granting pollymallen@gmail.com IAM roles on aicareerboost.com-org projects. Option A is dead. Flip to Option B: `gcloud auth login` as pollymallen@gmail.com, create project outside any org, redo OAuth consent + Desktop client, replace `~/.config/gws/client_secret.json`
-- [ ] Re-run `gws auth login --scopes "https://www.googleapis.com/auth/gmail.modify"` (explicit scope; avoid picker which previously selected readonly)
-- [ ] Verify `gws gmail users getProfile` succeeds without 403
-- [ ] Live test: run onboarding against `pollymallen@gmail.com` via gws — walk all phases (00 → 6)
+- [x] OAuth setup under work GCP (`email-inbox-mgr-polly`) — abandoned due to org-policy blocker (see Session 4)
+- [x] **Redo GCP project under personal gcloud** — `email-inbox-mgr-personal` created under pollymallen@gmail.com, outside any org, avoids `allowedPolicyMemberDomains`. New Desktop OAuth client at `~/.config/gws/client_secret.json`. Consent screen + Data Access scopes (`gmail.modify`, `userinfo.email`, `userinfo.profile`, `openid`) + test user (pollymallen@gmail.com) configured via new Google Auth Platform UI.
+- [x] Re-run `gws auth login --scopes "https://www.googleapis.com/auth/gmail.modify"` — granted 6 scopes including `gmail.modify`
+- [x] Verify `gws gmail users getProfile` — returns pollymallen@gmail.com, 54,942 messages / 51,475 threads
+- [ ] **Live test: run onboarding against `pollymallen@gmail.com` via gws — walk all phases (00 → 6)** — next session
 - [ ] Refine SKILL.md based on live testing
 - [ ] Add sample "fully populated" governance map as reference
 - [ ] Share at Next Level for entrepreneur feedback
 - [ ] Update README with any changes from testing
 - [ ] (Optional cleanup) Delete abandoned `email-inbox-mgr-polly` project from work GCP
+- [ ] (Optional cleanup) Delete accidentally-created OAuth client in `mineral-pride-156121` ("My First Project") under personal GCP
 
 ## What's Next
-- Redo GCP project under `pollymallen@gmail.com` personal gcloud (outside any org — avoids `allowedPolicyMemberDomains`). See SESSION-LOG.md Session 4 "To resume" for full 10-step checklist.
-- After that: first live test at `~/projects/personal/email/pollymallen-gmail/`, exercising Phase 00 welcome, progressive trust, gws transport end-to-end.
+- **First live test** at `~/projects/personal/email/pollymallen-gmail/` — say "Let's set up my email system" to fire Phase 00 welcome, then walk progressive trust + gws transport end-to-end against the real 54k-thread inbox.
 - Iterate on SKILL.md prompts based on real behavior.
-- Eventually: add `polly.allen@aicareerboost.com` as a second gws-authenticated account (same OAuth client works for multiple test users).
+- Eventually: add `polly.allen@aicareerboost.com` as a second gws-authenticated account (same OAuth client works for multiple test users — just add as second Test User in the Audience tab).
 
 ## Backlog (Spin-off Ideas)
 

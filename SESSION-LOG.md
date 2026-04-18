@@ -1,100 +1,9 @@
 # Session Log
 
+Older session entries are in `SESSION-LOG-archive.md`.
+
 ## Project Context
-Email Inbox Manager is an open-source Claude Code skill (github.com/pollymallen/email-inbox-manager, MIT, public) that learns a user's personal email organization system and helps them clean up, consolidate, and maintain their inbox. Session 1 (Apr 6-7): extracted files from a claude.ai design conversation, set up the GitHub repo, installed locally via symlink, then iterated SKILL.md with three additions — team rollout, scheduling/automation, expanded conversational query mode. Session 2 (Apr 13): hardened safety — constrained permission model with "To Trash" quarantine (skill never deletes), Phase 0 backup checkpoint, Phase 0 account-verification pre-check, Phase 0.5 historical cleanup, strengthened trigger description. Also: multi-account folder structure at `~/projects/personal/email/`, chose `gws` CLI as transport, audited and rejected `evolsb/claude-code-google-workspace` wrapper, backlogged `skill-evaluator` spin-off. Session 3 (Apr 13, plane wifi): pre-live-test dry-run caught 5 P0 + 7 P1 + 4 P2 bugs — all fixed. Added Phase 00 Welcome & Orientation with honest security framing. Added progressive trust model with three levels (always ask / session-only `session_auto: true` / persistent `auto`) and matching three-option graduation prompt. Added "You are here" markers to every phase. Added README "gws setup" section. Wrote `SPIN-OFF-skill-evaluator-spec.md`. Session 4 (Apr 14, ground): pushed 7 commits, installed `googleworkspace-cli` via brew, then discovered `gws` does NOT ship an MCP server (Session 2/3 assumption was wrong). Pivoted to **gws-via-Bash** transport — skill invokes `gws` commands through Claude Code's Bash tool, no MCP wrapper needed. Rewrote SKILL.md with a new "Transport Layer" section (operation→transport mapping table for both connector and gws), updated README to drop the obsolete "register gws mcp" step. Started OAuth setup under work GCP (`email-inbox-mgr-polly`), set up consent screen + Desktop OAuth client + downloaded client_secret.json, enabled Gmail API, ran `gws auth login` as pollymallen@gmail.com — but hit IAM blocker: `aicareerboost.com` Workspace has `constraints/iam.allowedPolicyMemberDomains` org policy preventing pollymallen@gmail.com from being granted IAM roles on work-org projects. Current state: skill is ~970 lines with transport abstraction live and pushed; live test blocked on redo under personal gcloud (Option B) with GCP project outside any org.
-
-## Session 2 — 2026-04-13
-**Phase:** 2.5 Safety & Onboarding Hardening + Phase 3 kickoff planning
-**Goals:** Resume project, harden the skill based on real-use concerns, start testing with `pollymallen@gmail.com`
-
-**Done:**
-- Added **Permission Model** section: constrained write access, no deletion, `To Trash` quarantine label pattern — skill can create labels, move/archive/draft, but never deletes. User empties `To Trash` manually.
-- Added `to_trash` entry to `triage_boxes` in both SKILL.md and starter YAML
-- Updated triage Phase 3 options: "Delete/archive" → "Archive / Send to To Trash"
-- Added **Phase 0 — Backup Checkpoint**: snapshot label structure / Google Takeout / skip, before any action
-- Added **Phase 0 Pre-check — Account Verification**: skill must identify connected Gmail and confirm it matches working dir before proceeding (gap caught when realized we hadn't switched connector)
-- Added **Phase 0.5 — Historical Cleanup**: optional bulk pass for large/old inboxes; categorized criteria (old newsletters, social notifications, transactional, calendar, auto-notifications, long-dormant threads) with age thresholds, per-batch approval, sample preview, default Archive not Trash
-- Strengthened skill description frontmatter: added exact phrase "let's set up my email system," explicit "ALWAYS use this skill — do NOT design a new system from scratch," noted empty working directory is expected starting state
-- Added `historical_cleanup` section to starter YAML for audit trail
-- README: added Safety and Backup sections
-- Created `~/projects/personal/email/` and `~/projects/personal/email/pollymallen-gmail/` folders with top-level README explaining multi-account pattern
-- Researched Google Workspace CLI (`gws`, github.com/googleworkspace/cli) released March 2026 — decided this is the right MCP transport for multi-account (no connector swap needed)
-- Audited `evolsb/claude-code-google-workspace` community wrapper — 2 commits, 10 stars, 5+ weeks stale, one-person project, security gaps. Verdict: skip, go direct with official `gws`.
-- Backlogged `skill-evaluator` spin-off skill to global `~/projects/BACKLOG.md` (Project Ideas section) and project PLAN.md
-- 5 commits pushed to GitHub (permission model, backup checkpoint, historical cleanup, trigger strengthening, account verification, backlog note)
-
-**Unfinished:**
-- `gws` CLI not yet installed
-- OAuth Desktop app not yet created in GCP for `pollymallen@gmail.com`
-- `gws mcp` not yet registered in Claude Code config
-- Live onboarding test not yet run
-- Sample populated governance map still pending
-
-**Blockers:**
-- User was on a plane with patchy wifi at wrap time. GCP OAuth setup needs real connectivity.
-- OAuth + MCP registration is ~30 min of setup before the actual skill test can run.
-
-**To resume:**
-1. Make sure you're on real wifi
-2. `brew install googleworkspace-cli` (or check if already installed)
-3. Create GCP OAuth Desktop client for `pollymallen@gmail.com`: https://console.cloud.google.com → create project → OAuth consent screen (External, testing, add yourself as Test User) → Credentials → Create OAuth client (Desktop app) → download JSON to `~/.config/gws/client_secret.json`
-4. `gws auth setup` (if you have gcloud) or skip to `gws auth login`
-5. Register `gws mcp` as an MCP server in Claude Code config (`~/.claude.json` or similar — check `gws mcp --help`)
-6. Restart Claude Code, verify gws tools appear
-7. `cd ~/projects/personal/email/pollymallen-gmail && claude`
-8. Say "Let's set up my email system" — should trigger skill and start Phase 0 (pre-check + backup)
-9. Walk through Phases 0 → 6 with a real inbox
-
-**Key decisions made this session:**
-- Permission model: no deletion, ever. `To Trash` label is the only "delete-like" action.
-- Multi-account via `gws` CLI (not connector swap, not `evolsb/claude-code-google-workspace` wrapper)
-- Folder convention: `~/projects/personal/email/{handle}-{provider}/` per account
-- `skill-evaluator` is a separate future project, backlogged globally, not blocking email-inbox-manager
-
-## Session 3 — 2026-04-13 (plane continuation)
-**Phase:** Pre-live-test hardening (completing Phase 2.5 polish before Phase 3 live test)
-**Goals:** Do plane-friendly work toward the live test — spent the session on dry-run review, docs, spec, and P0/P1/P2 fixes plus a newcomer-friendly layer.
-
-**Done (6 commits, all local, not yet pushed):**
-- **Dry-run review (parallel subagent):** caught 5 P0 + 7 P1 + 4 P2 issues before first live test
-- **P0 fixes (commit 1):**
-  - Renamed duplicate "Phase 0" to Phase 0a (account check) and Phase 0b (backup)
-  - Dropped assumption of Gmail `whoami` tool; now uses `in:sent` From-field as primary check
-  - Added Archive/To Trash/Move tool-mapping block (Archive = `unlabel_thread(INBOX)`)
-  - Moved `To Trash` label creation to Phase 0a so Phase 0.5 and Phase 2 can rely on it
-  - Added Phase 0.5 VIP pre-step + clarified box-rail no-op on first run
-- **gws README docs (commit 2, via subagent):** "Connecting Gmail: Two Options" section added to README covering claude.ai connector (Option A) and gws CLI with full OAuth walkthrough (Option B). No commands invented beyond verified context.
-- **skill-evaluator spec (commit 3, via subagent):** Wrote `SPIN-OFF-skill-evaluator-spec.md` — design doc for the backlogged spin-off (5-dimension rubric, gh/WebFetch data gathering, sample audit report, edge cases).
-- **P1 fixes (commit 4):** snapshot capped at labels + 100 thread IDs per label; mid-batch MCP failure writes `resume_token` to changelog (no silent retry); nudge counter increments on send-approval not draft; Mode 4 date math uses user's local TZ (PT); solo-user escape hatch on team-review block; unified `triage_rules` condition schema under `any/all` wrappers with documented precedence rules; nudge-override guidance.
-- **P2 fixes + orientation layer (commit 5):** Added **Phase 00 Welcome & Orientation** — always-first step with plain-language tour of all 9 phases, skippable markers, pacing note, honest security framing (email stays in Gmail, plain-text files, no lock-in, accurate Anthropic data-handling framing without overclaiming). Added "You are here" marker to every phase header. Phase 3 falls back to recent archived when inbox is empty. Dashboard gated behind explicit request. README snapshot description corrected.
-- **Progressive trust model (commit 6):** Reframed "can't delete" as a **structural guarantee** — the Gmail MCP connector has no delete tool at all, not an LLM preference. Added three-level trust (always ask / session-only via `session_auto: true` / persistent `auto`) with explicit downgrade path. Graduation prompt now asks three options ("just this session" / "from now on" / "keep asking") instead of yes/no. Listed trigger phrases for each level.
-
-**Unfinished (still blocked on ground wifi):**
-- 6 commits ahead of origin — need `git push`
-- `gws` CLI install (`brew install googleworkspace-cli`)
-- GCP OAuth Desktop app for `pollymallen@gmail.com`
-- `gws auth login` + `gws mcp` registration in Claude Code config
-- Live onboarding run
-- Sample "fully populated" governance map still pending
-
-**Blockers:** Real wifi for OAuth + brew install. Everything plane-friendly is done.
-
-**To resume (on ground):**
-1. `cd ~/projects/experiments/active/email-manager && git push` (6 commits)
-2. `brew install googleworkspace-cli`
-3. GCP OAuth Desktop client for `pollymallen@gmail.com` → `~/.config/gws/client_secret.json`
-4. `gws auth login` per account
-5. Register `gws mcp` (see `gws mcp --help` — exact command TBD)
-6. Restart Claude Code; verify `mcp__gws__*` tools appear
-7. `cd ~/projects/personal/email/pollymallen-gmail && claude`
-8. Say "Let's set up my email system" — should fire Phase 00 welcome, then 0a account check against pollymallen@gmail.com
-9. Walk through Phases 0a → 6 on a real inbox, note any skill improvements needed
-
-**Key decisions this session:**
-- Security framing must be honest, never overclaim Anthropic data handling. Point to Anthropic's current policy rather than summarizing it.
-- "Can't delete" framing: lead with the structural truth (connector has no delete tool). Far stronger than "rule I follow."
-- Progressive trust: always three options, never yes/no, so users don't accidentally persist session-only intent.
-- Orientation runs EVERY onboarding, not just first-time — users can say "I know this, skip ahead" but the skill always offers the tour.
+Email Inbox Manager is an open-source Claude Code skill (`github.com/pollymallen/email-inbox-manager`, MIT, public) that learns a user's personal email organization system and helps clean up, consolidate, and maintain their inbox. **Sessions 1–3 (Apr 6–13):** extracted the design from a claude.ai conversation, set up the GitHub repo + local symlink install, iterated SKILL.md with team rollout / scheduling / conversational query, hardened safety (permission model, no-delete guarantee, `To Trash` quarantine, Phase 0a/0b account-check + backup, Phase 0.5 historical cleanup), added Phase 00 Welcome & Orientation, progressive trust model (always-ask / session-auto / persistent-auto) and three-option graduation prompts, honest security framing, newcomer-friendly "You are here" markers, README gws-setup section, and `SPIN-OFF-skill-evaluator-spec.md`. Dry-run subagent caught + cleared 5 P0 + 7 P1 + 4 P2 bugs before first live test. **Session 4 (Apr 14):** pushed 7 commits, installed `googleworkspace-cli`, discovered `gws` ships no MCP server — pivoted transport to **gws-via-Bash** and rewrote SKILL.md Transport Layer with an operation→transport mapping table covering both connector and gws. OAuth setup under work GCP hit `constraints/iam.allowedPolicyMemberDomains` org policy. **Session 5 (Apr 17 night → Apr 18 early AM):** unblocked the OAuth wall. Created `email-inbox-mgr-personal` under personal gcloud (outside any org), set up consent screen + Data Access scopes + test user in the new Google Auth Platform UI, re-ran `gws auth login` with explicit `gmail.modify` scope, verified `gws gmail users getProfile` — returns real inbox (54,942 messages / 51,475 threads). **Current state:** skill is ~970 lines with transport abstraction live and pushed; first live onboarding run is unblocked and queued for the next session at `~/projects/personal/email/pollymallen-gmail/`.
 
 ## Session 4 — 2026-04-14 (ground, partial)
 **Phase:** Phase 3 kickoff — transport pivot + OAuth setup (blocked mid-flight)
@@ -129,19 +38,52 @@ Email Inbox Manager is an open-source Claude Code skill (github.com/pollymallen/
 
 **Decision queued (needs Polly next session):** Flip to **Option B** — redo GCP project under `pollymallen@gmail.com`'s personal gcloud identity (outside any org), which avoids the org-policy entirely. The `email-inbox-mgr-polly` project under work GCP is effectively abandoned (can be deleted for cleanup, or left as-is — no cost).
 
-**To resume:**
-1. `gcloud auth login` as pollymallen@gmail.com (will switch gcloud active account)
-2. `gcloud config set account pollymallen@gmail.com`
-3. `gcloud projects create email-inbox-mgr-personal --name="Email Inbox Manager"` (or similar name)
-4. `gcloud config set project email-inbox-mgr-personal`
-5. Redo OAuth consent screen + Desktop client under the NEW project — download new `client_secret.json`, replace `~/.config/gws/client_secret.json`
-6. `gws auth logout` (clear old creds), then `gcloud services enable gmail.googleapis.com --project email-inbox-mgr-personal`
-7. `gws auth login --scopes "https://www.googleapis.com/auth/gmail.modify"` — explicit scope to avoid readonly picker
-8. Verify: `gws gmail users getProfile --params '{"userId":"me"}'` — should return email + message count, no 403
-9. `cd ~/projects/personal/email/pollymallen-gmail && claude`
-10. Say "Let's set up my email system" — first test of Phase 00 welcome + progressive trust + gws transport
-
 **Key decisions this session:**
 - Transport: **gws-via-Bash**, not an MCP wrapper. Same pattern as `gdrive` CLI in CLAUDE.md. Simpler, no third-party wrapper to audit.
 - GCP project must live outside `aicareerboost.com` org because of `allowedPolicyMemberDomains` — this is a one-time learning, write it down so future multi-account setups don't repeat the mistake.
 - Scope at login: use `--scopes` flag explicitly with `gmail.modify`, not `--services gmail` which invokes the picker and led to wrong-scope selection.
+
+## Session 5 — 2026-04-17 night → 2026-04-18 early AM
+**Phase:** Phase 3 kickoff — OAuth unblock under personal gcloud
+**Goals:** Flip to Option B, set up personal GCP project + OAuth, verify Gmail API end-to-end so the next session can run the live test.
+
+**Done:**
+- **Verified `gcloud` identity** — pollymallen@gmail.com was already active (Polly had run `gcloud auth login` before the session)
+- **Created personal GCP project `email-inbox-mgr-personal`** (project number `272170192891`) under pollymallen@gmail.com, outside any org
+- **Enabled Gmail API** (`gmail.googleapis.com`)
+- **Backed up old work-org credentials** to `~/.config/gws/client_secret.json.work-org-backup`
+- **Set up OAuth consent screen** via the new "Google Auth Platform" UI at `console.cloud.google.com/auth/*?project=email-inbox-mgr-personal`:
+  - User type: External
+  - Publishing status: Testing
+  - Test users: pollymallen@gmail.com
+  - **Data Access scopes registered:** `openid`, `userinfo.email`, `userinfo.profile`, `gmail.modify`
+- **Created Desktop OAuth client** under the new project → downloaded `client_secret_272170192891-*.apps.googleusercontent.com.json` → moved to `~/.config/gws/client_secret.json` (confirmed `project_id: email-inbox-mgr-personal`)
+- **`gws auth logout`** to clear residual work-org tokens
+- **`gws auth login --scopes "https://www.googleapis.com/auth/gmail.modify"`** — authed successfully, granted 6 scopes incl. `gmail.modify`
+- **Verified Gmail API:** `gws gmail users getProfile --params '{"userId":"me"}'` returns `pollymallen@gmail.com`, 54,942 messages / 51,475 threads — real inbox data
+
+**Debug detours worth remembering:**
+1. First attempt at OAuth consent screen URL showed a "You need additional access" page — caused by the browser defaulting to a different Google account than pollymallen@gmail.com. Fix: switch account via top-right avatar, or use incognito. (The CLI identity was always correct; only the browser session was wrong.)
+2. First Desktop OAuth client got accidentally created in `mineral-pride-156121` ("My First Project" — GCP auto-created default) because the console's project picker top-bar overrode the `?project=` URL param after the account switch. Caught via project-number check in the downloaded filename (`921967829181` vs expected `272170192891`). Redid in the correct project.
+3. First `gws auth login` attempt hit "Access blocked: Email Inbox Manager has not completed the Google verification process" with **no** Advanced link — a hard block, not the usual unverified-app warning. Root cause: **test user hadn't propagated / wasn't yet attached** in the new Auth Platform UI's Audience tab. Re-adding pollymallen@gmail.com as Test User fixed it — the block then became the soft "Advanced → Go to (unsafe)" flow.
+4. First successful login granted only basic profile scopes — `gmail.modify` was missing. Root cause: the new consent flow no longer shows checkboxes. The initial login happened before Data Access scopes were registered, so Google only granted what was declared. Fix: register all four scopes in Data Access tab → `gws auth logout` → re-login. Second login correctly showed "Read, compose, and send emails from your Gmail account" on the consent page and `Continue` granted it.
+
+**Unfinished:**
+- **Live onboarding run not yet done** — queued for next session with full context (see "To resume")
+- Sample "fully populated" governance map still pending (generated during/after live test)
+- (Optional) Delete abandoned `email-inbox-mgr-polly` in work GCP
+- (Optional) Delete the accidentally-created OAuth client in personal `mineral-pride-156121`
+
+**Blockers:** None. Phase 3 is fully unblocked.
+
+**To resume:**
+1. `cd ~/projects/personal/email/pollymallen-gmail && claude`
+2. Say "Let's set up my email system"
+3. Skill should fire → Phase 00 welcome → Phase 0a account check (`gws gmail users getProfile` under the hood, should match pollymallen@gmail.com) → Phase 0b backup → Phase 0.5 historical cleanup decision → Phase 1 onwards
+4. Take notes on any skill prompt / flow issues as they happen — feed back into SKILL.md refinements
+5. After the first pass, generate a sample "fully populated" governance map from the real run for reference
+
+**Key decisions this session:**
+- **GCP projects for personal Gmail API access MUST live outside any Workspace org.** Workspace orgs commonly have `constraints/iam.allowedPolicyMemberDomains` which rejects personal-gmail principals. No amount of project-level config can bypass it. Always start from `gcloud auth login` as the personal identity.
+- The new Google Auth Platform UI requires Data Access scopes to be registered **before** OAuth login, and test users must be attached in the Audience tab. Old "OAuth consent screen" wizard is gone — the per-tab model (Branding, Audience, Clients, Data Access) is load-bearing.
+- After changing scopes or test users, always `gws auth logout` before re-running `gws auth login` — old refresh tokens won't auto-upgrade scope.
